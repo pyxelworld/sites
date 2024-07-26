@@ -109,55 +109,92 @@
                 <button onclick="minerar()">Minerar</button>
                 <button onclick="cacar()">Caçar</button>
             </div>
-            <input type="number" id="quantidade" placeholder="Quantidade">
+            <input type="number" id="quantidade" placeholder="Quantidade" value="1">
             <button id="proximoDia" onclick="proximoDia()" disabled>Próximo Dia</button>
+            <button onclick="novoJogo()">Novo Jogo</button>
             <div id="mensagem"></div>
         </div>
     </div>
 
     <script>
-        let homens = 5000;
-        let soldados = 1000;
-        let escravos = 0;
-        let pyxelCoins = 100000;
-        let ouro = 0;
-        let cobre = 0;
-        let presasTerrestres = 0;
-        let presasMaritimas = 0;
-        let territorios = 0;
-        let dia = 1;
-        let acaoRealizada = false;
+        let gameState = {
+            homens: 5000,
+            soldados: 1000,
+            escravos: 0,
+            pyxelCoins: 100000,
+            ouro: 0,
+            cobre: 0,
+            presasTerrestres: 0,
+            presasMaritimas: 0,
+            territorios: 0,
+            dia: 1,
+            acaoRealizada: false
+        };
+
+        function salvarJogo() {
+            localStorage.setItem('reiDaAfricaState', JSON.stringify(gameState));
+        }
+
+        function carregarJogo() {
+            const savedState = localStorage.getItem('reiDaAfricaState');
+            if (savedState) {
+                gameState = JSON.parse(savedState);
+                atualizarStatus();
+            }
+        }
+
+        function novoJogo() {
+            gameState = {
+                homens: 5000,
+                soldados: 1000,
+                escravos: 0,
+                pyxelCoins: 100000,
+                ouro: 0,
+                cobre: 0,
+                presasTerrestres: 0,
+                presasMaritimas: 0,
+                territorios: 0,
+                dia: 1,
+                acaoRealizada: false
+            };
+            salvarJogo();
+            atualizarStatus();
+            document.getElementById('proximoDia').disabled = true;
+            document.getElementById('quantidade').value = '1';
+            exibirMensagem("Novo jogo iniciado!");
+        }
 
         function atualizarStatus() {
-            const soldadosNecessarios = 400000 - soldados;
+            const soldadosNecessarios = 400000 - gameState.soldados;
             const status = document.getElementById('status');
             status.innerHTML = `
-                <div class="status-item"><h3>Dia</h3><p>${dia}</p></div>
-                <div class="status-item"><h3>Homens</h3><p>${homens}</p></div>
-                <div class="status-item"><h3>Soldados</h3><p>${soldados}</p></div>
-                <div class="status-item"><h3>Escravos</h3><p>${escravos}</p></div>
-                <div class="status-item"><h3>PyxelCoins</h3><p>${pyxelCoins}</p></div>
-                <div class="status-item"><h3>Ouro</h3><p>${ouro}</p></div>
-                <div class="status-item"><h3>Cobre</h3><p>${cobre}</p></div>
-                <div class="status-item"><h3>Presas Terrestres</h3><p>${presasTerrestres}</p></div>
-                <div class="status-item"><h3>Presas Marítimas</h3><p>${presasMaritimas}</p></div>
-                <div class="status-item"><h3>Territórios</h3><p>${territorios}</p></div>
+                <div class="status-item"><h3>Dia</h3><p>${gameState.dia}</p></div>
+                <div class="status-item"><h3>Homens</h3><p>${gameState.homens}</p></div>
+                <div class="status-item"><h3>Soldados</h3><p>${gameState.soldados}</p></div>
+                <div class="status-item"><h3>Escravos</h3><p>${gameState.escravos}</p></div>
+                <div class="status-item"><h3>PyxelCoins</h3><p>${gameState.pyxelCoins}</p></div>
+                <div class="status-item"><h3>Ouro</h3><p>${gameState.ouro}</p></div>
+                <div class="status-item"><h3>Cobre</h3><p>${gameState.cobre}</p></div>
+                <div class="status-item"><h3>Presas Terrestres</h3><p>${gameState.presasTerrestres}</p></div>
+                <div class="status-item"><h3>Presas Marítimas</h3><p>${gameState.presasMaritimas}</p></div>
+                <div class="status-item"><h3>Territórios</h3><p>${gameState.territorios}</p></div>
                 <div class="status-item"><h3>Soldados para África do Sul</h3><p>${soldadosNecessarios}</p></div>
             `;
+            salvarJogo();
         }
 
         function habilitarProximoDia() {
-            acaoRealizada = true;
+            gameState.acaoRealizada = true;
             document.getElementById('proximoDia').disabled = false;
+            salvarJogo();
         }
 
         function proximoDia() {
-            if (acaoRealizada) {
-                dia++;
-                const ganhoHomens = homens * 3;
-                const ganhoEscravos = escravos * 6;
-                pyxelCoins += ganhoHomens + ganhoEscravos;
-                console.log(`Ganho de PyxelCoins: ${ganhoHomens} (homens) + ${ganhoEscravos} (escravos) = ${ganhoHomens + ganhoEscravos}`);
+            if (gameState.acaoRealizada) {
+                gameState.dia++;
+                const ganhoHomens = gameState.homens * 3;
+                const ganhoEscravos = gameState.escravos * 6;
+                gameState.pyxelCoins += ganhoHomens + ganhoEscravos;
 
                 if (Math.random() < 0.2) {
                     const resultado = guerraAleatoria();
@@ -165,9 +202,10 @@
                 }
 
                 atualizarStatus();
-                acaoRealizada = false;
+                gameState.acaoRealizada = false;
                 document.getElementById('proximoDia').disabled = true;
-                exibirMensagem(`Dia ${dia} iniciado. Ganho diário: ${ganhoHomens + ganhoEscravos} PyxelCoins`);
+                exibirMensagem(`Dia ${gameState.dia} iniciado. Ganho diário: ${ganhoHomens + ganhoEscravos} PyxelCoins`);
+                salvarJogo();
             }
         }
 
@@ -185,9 +223,9 @@
         function comprarHomens() {
             const quantidade = parseInt(document.getElementById('quantidade').value);
             const custo = quantidade * 3000;
-            if (custo <= pyxelCoins) {
-                homens += quantidade;
-                pyxelCoins -= custo;
+            if (custo <= gameState.pyxelCoins) {
+                gameState.homens += quantidade;
+                gameState.pyxelCoins -= custo;
                 exibirMensagem(`Você comprou ${quantidade} homens por ${custo} PyxelCoins.`);
                 habilitarProximoDia();
             } else {
@@ -198,10 +236,10 @@
 
         function venderHomens() {
             const quantidade = parseInt(document.getElementById('quantidade').value);
-            if (quantidade <= homens) {
+            if (quantidade <= gameState.homens) {
                 const ganho = quantidade * 3000;
-                homens -= quantidade;
-                pyxelCoins += ganho;
+                gameState.homens -= quantidade;
+                gameState.pyxelCoins += ganho;
                 exibirMensagem(`Você vendeu ${quantidade} homens por ${ganho} PyxelCoins.`);
                 habilitarProximoDia();
             } else {
@@ -213,9 +251,9 @@
         function comprarSoldados() {
             const quantidade = parseInt(document.getElementById('quantidade').value);
             const custo = quantidade * 12000;
-            if (custo <= pyxelCoins) {
-                soldados += quantidade;
-                pyxelCoins -= custo;
+            if (custo <= gameState.pyxelCoins) {
+                gameState.soldados += quantidade;
+                gameState.pyxelCoins -= custo;
                 exibirMensagem(`Você comprou ${quantidade} soldados por ${custo} PyxelCoins.`);
                 habilitarProximoDia();
             } else {
@@ -239,11 +277,11 @@
                 const ganhoPyxelCoins = Math.floor(Math.random() * 50000) + 5000;
                 const ganhoEscravos = Math.floor(Math.random() * 500) + 50;
                 
-                homens += ganhoHomens;
-                soldados += ganhoSoldados;
-                pyxelCoins += ganhoPyxelCoins;
-                escravos += ganhoEscravos;
-                territorios++;
+                gameState.homens += ganhoHomens;
+                gameState.soldados += ganhoSoldados;
+                gameState.pyxelCoins += ganhoPyxelCoins;
+                gameState.escravos += ganhoEscravos;
+                gameState.territorios++;
 
                 return `Vitória! Você ganhou ${ganhoHomens} homens, ${ganhoSoldados} soldados, ${ganhoPyxelCoins} PyxelCoins, ${ganhoEscravos} escravos e 1 território.`;
             } else {
@@ -251,30 +289,30 @@
                 const perdaSoldados = Math.floor(Math.random() * 50) + 5;
                 const perdaPyxelCoins = Math.floor(Math.random() * 25000) + 2500;
 
-                homens = Math.max(0, homens - perdaHomens);
-                soldados = Math.max(0, soldados - perdaSoldados);
-                pyxelCoins = Math.max(0, pyxelCoins - perdaPyxelCoins);
+                gameState.homens = Math.max(0, gameState.homens - perdaHomens);
+                gameState.soldados = Math.max(0, gameState.soldados - perdaSoldados);
+                gameState.pyxelCoins = Math.max(0, gameState.pyxelCoins - perdaPyxelCoins);
 
                 return `Derrota! Você perdeu ${perdaHomens} homens, ${perdaSoldados} soldados e ${perdaPyxelCoins} PyxelCoins.`;
             }
         }
 
         function minerar() {
-            if (escravos > 0) {
+            if (gameState.escravos > 0) {
                 const chanceOuro = Math.random();
                 const chanceCobre = Math.random();
                 let mensagem = "Resultado da mineração:\n";
 
                 if (chanceOuro < 0.01) {
-                    ouro++;
-                    pyxelCoins += 80000;
+                    gameState.ouro++;
+                    gameState.pyxelCoins += 80000;
                     mensagem += "Encontrou 1 ouro! (+80000 PyxelCoins)\n";
                 }
 
                 if (chanceCobre < 0.1) {
                     const cobreEncontrado = Math.floor(Math.random() * 5) + 1;
-                    cobre += cobreEncontrado;
-                    pyxelCoins += cobreEncontrado * 500;
+                    gameState.cobre += cobreEncontrado;
+                    gameState.pyxelCoins += cobreEncontrado * 500;
                     mensagem += `Encontrou ${cobreEncontrado} cobre! (+${cobreEncontrado * 500} PyxelCoins)\n`;
                 }
 
@@ -291,22 +329,22 @@
         }
 
         function cacar() {
-            if (soldados > 0) {
+            if (gameState.soldados > 0) {
                 const chanceTerrestre = Math.random();
                 const chanceMaritima = Math.random();
                 let mensagem = "Resultado da caça:\n";
 
                 if (chanceTerrestre < 0.3) {
                     const presasCapturadas = Math.floor(Math.random() * 3) + 1;
-                    presasTerrestres += presasCapturadas;
-                    pyxelCoins += presasCapturadas * 1500;
+                    gameState.presasTerrestres += presasCapturadas;
+                    gameState.pyxelCoins += presasCapturadas * 1500;
                     mensagem += `Capturou ${presasCapturadas} presas terrestres! (+${presasCapturadas * 1500} PyxelCoins)\n`;
                 }
 
                 if (chanceMaritima < 0.2) {
                     const presasCapturadas = Math.floor(Math.random() * 2) + 1;
-                    presasMaritimas += presasCapturadas;
-                    pyxelCoins += presasCapturadas * 1800;
+                    gameState.presasMaritimas += presasCapturadas;
+                    gameState.pyxelCoins += presasCapturadas * 1800;
                     mensagem += `Capturou ${presasCapturadas} presas marítimas! (+${presasCapturadas * 1800} PyxelCoins)\n`;
                 }
 
@@ -322,7 +360,11 @@
             atualizarStatus();
         }
 
-        atualizarStatus();
+        window.onload = function() {
+            carregarJogo();
+            atualizarStatus();
+            document.getElementById('quantidade').value = '1';
+        };
     </script>
 </body>
 </html>
