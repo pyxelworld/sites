@@ -101,10 +101,9 @@
         <div class="game-board">
             <div class="status-container" id="status"></div>
             <div class="actions-container">
-                <button onclick="trabalhar()">Trabalhar</button>
-                <button onclick="comprarHomens()">Comprar Homens</button>
-                <button onclick="venderHomens()">Vender Homens</button>
-                <button onclick="comprarSoldados()">Comprar Soldados</button>
+                <button onmousedown="iniciarCompra('homens')" onmouseup="pararCompra()" onmouseleave="pararCompra()">Comprar Homens</button>
+                <button onmousedown="iniciarVenda()" onmouseup="pararVenda()" onmouseleave="pararVenda()">Vender Homens</button>
+                <button onmousedown="iniciarCompra('soldados')" onmouseup="pararCompra()" onmouseleave="pararCompra()">Comprar Soldados</button>
                 <button onclick="guerrear()">Guerrear</button>
                 <button onclick="minerar()">Minerar</button>
                 <button onclick="cacar()">Caçar</button>
@@ -128,8 +127,15 @@
             presasMaritimas: 0,
             territorios: 0,
             dia: 1,
-            acaoRealizada: false
+            acaoRealizada: false,
+            vitorias: 0,
+            derrotas: 0,
+            resultadoMineracao: "",
+            resultadoCaca: ""
         };
+
+        let intervaloCompra;
+        let intervaloVenda;
 
         function salvarJogo() {
             localStorage.setItem('reiDaAfricaState', JSON.stringify(gameState));
@@ -155,7 +161,11 @@
                 presasMaritimas: 0,
                 territorios: 0,
                 dia: 1,
-                acaoRealizada: false
+                acaoRealizada: false,
+                vitorias: 0,
+                derrotas: 0,
+                resultadoMineracao: "",
+                resultadoCaca: ""
             };
             salvarJogo();
             atualizarStatus();
@@ -179,6 +189,8 @@
                 <div class="status-item"><h3>Presas Marítimas</h3><p>${gameState.presasMaritimas}</p></div>
                 <div class="status-item"><h3>Territórios</h3><p>${gameState.territorios}</p></div>
                 <div class="status-item"><h3>Soldados para África do Sul</h3><p>${soldadosNecessarios}</p></div>
+                <div class="status-item"><h3>Vitórias</h3><p>${gameState.vitorias}</p></div>
+                <div class="status-item"><h3>Derrotas</h3><p>${gameState.derrotas}</p></div>
             `;
             salvarJogo();
         }
@@ -192,6 +204,7 @@
         function proximoDia() {
             if (gameState.acaoRealizada) {
                 gameState.dia++;
+                trabalhar();
                 const ganhoHomens = gameState.homens * 3;
                 const ganhoEscravos = gameState.escravos * 6;
                 gameState.pyxelCoins += ganhoHomens + ganhoEscravos;
@@ -201,10 +214,22 @@
                     exibirMensagem(resultado);
                 }
 
+                let mensagem = `Dia ${gameState.dia} iniciado. Ganho diário: ${ganhoHomens + ganhoEscravos} PyxelCoins`;
+
+                if (gameState.resultadoMineracao) {
+                    mensagem += "\n" + gameState.resultadoMineracao;
+                    gameState.resultadoMineracao = "";
+                }
+
+                if (gameState.resultadoCaca) {
+                    mensagem += "\n" + gameState.resultadoCaca;
+                    gameState.resultadoCaca = "";
+                }
+
                 atualizarStatus();
                 gameState.acaoRealizada = false;
                 document.getElementById('proximoDia').disabled = true;
-                exibirMensagem(`Dia ${gameState.dia} iniciado. Ganho diário: ${ganhoHomens + ganhoEscravos} PyxelCoins`);
+                exibirMensagem(mensagem);
                 salvarJogo();
             }
         }
@@ -216,50 +241,44 @@
         }
 
         function trabalhar() {
-            exibirMensagem("Seus homens e escravos trabalharão automaticamente no próximo dia.");
-            habilitarProximoDia();
+            // A função trabalhar() continua existindo, mas agora é chamada automaticamente no próximo dia
         }
 
-        function comprarHomens() {
-            const quantidade = parseInt(document.getElementById('quantidade').value);
-            const custo = quantidade * 3000;
-            if (custo <= gameState.pyxelCoins) {
-                gameState.homens += quantidade;
-                gameState.pyxelCoins -= custo;
-                exibirMensagem(`Você comprou ${quantidade} homens por ${custo} PyxelCoins.`);
-                habilitarProximoDia();
-            } else {
-                exibirMensagem("PyxelCoins insuficientes!");
-            }
-            atualizarStatus();
+        function iniciarCompra(tipo) {
+            intervaloCompra = setInterval(() => {
+                const maxQuantidade = Math.floor(gameState.pyxelCoins / (tipo === 'homens' ? 3000 : 12000));
+                if (maxQuantidade > 0) {
+                    if (tipo === 'homens') {
+                        gameState.homens += maxQuantidade;
+                        gameState.pyxelCoins -= maxQuantidade * 3000;
+                    } else {
+                        gameState.soldados += maxQuantidade;
+                        gameState.pyxelCoins -= maxQuantidade * 12000;
+                    }
+                    atualizarStatus();
+                    habilitarProximoDia();
+                }
+            }, 100);
         }
 
-        function venderHomens() {
-            const quantidade = parseInt(document.getElementById('quantidade').value);
-            if (quantidade <= gameState.homens) {
-                const ganho = quantidade * 3000;
-                gameState.homens -= quantidade;
-                gameState.pyxelCoins += ganho;
-                exibirMensagem(`Você vendeu ${quantidade} homens por ${ganho} PyxelCoins.`);
-                habilitarProximoDia();
-            } else {
-                exibirMensagem("Homens insuficientes!");
-            }
-            atualizarStatus();
+        function pararCompra() {
+            clearInterval(intervaloCompra);
         }
 
-        function comprarSoldados() {
-            const quantidade = parseInt(document.getElementById('quantidade').value);
-            const custo = quantidade * 12000;
-            if (custo <= gameState.pyxelCoins) {
-                gameState.soldados += quantidade;
-                gameState.pyxelCoins -= custo;
-                exibirMensagem(`Você comprou ${quantidade} soldados por ${custo} PyxelCoins.`);
-                habilitarProximoDia();
-            } else {
-                exibirMensagem("PyxelCoins insuficientes!");
-            }
-            atualizarStatus();
+        function iniciarVenda() {
+            intervaloVenda = setInterval(() => {
+                if (gameState.homens > 0) {
+                    const quantidade = gameState.homens;
+                    gameState.homens = 0;
+                    gameState.pyxelCoins += quantidade * 3000;
+                    atualizarStatus();
+                    habilitarProximoDia();
+                }
+            }, 100);
+        }
+
+        function pararVenda() {
+            clearInterval(intervaloVenda);
         }
 
         function guerrear() {
@@ -282,6 +301,7 @@
                 gameState.pyxelCoins += ganhoPyxelCoins;
                 gameState.escravos += ganhoEscravos;
                 gameState.territorios++;
+                gameState.vitorias++;
 
                 return `Vitória! Você ganhou ${ganhoHomens} homens, ${ganhoSoldados} soldados, ${ganhoPyxelCoins} PyxelCoins, ${ganhoEscravos} escravos e 1 território.`;
             } else {
@@ -292,6 +312,7 @@
                 gameState.homens = Math.max(0, gameState.homens - perdaHomens);
                 gameState.soldados = Math.max(0, gameState.soldados - perdaSoldados);
                 gameState.pyxelCoins = Math.max(0, gameState.pyxelCoins - perdaPyxelCoins);
+                gameState.derrotas++;
 
                 return `Derrota! Você perdeu ${perdaHomens} homens, ${perdaSoldados} soldados e ${perdaPyxelCoins} PyxelCoins.`;
             }
@@ -320,7 +341,7 @@
                     mensagem += "Nada encontrado desta vez.";
                 }
 
-                exibirMensagem(mensagem);
+                gameState.resultadoMineracao = mensagem;
                 habilitarProximoDia();
             } else {
                 exibirMensagem("Você não tem escravos para minerar!");
@@ -344,15 +365,15 @@
                 if (chanceMaritima < 0.2) {
                     const presasCapturadas = Math.floor(Math.random() * 2) + 1;
                     gameState.presasMaritimas += presasCapturadas;
-                    gameState.pyxelCoins += presasCapturadas * 1800;
-                    mensagem += `Capturou ${presasCapturadas} presas marítimas! (+${presasCapturadas * 1800} PyxelCoins)\n`;
+                    gameState.pyxelCoins += presasCapturadas * 2000;
+                    mensagem += `Capturou ${presasCapturadas} presas marítimas! (+${presasCapturadas * 2000} PyxelCoins)\n`;
                 }
 
                 if (mensagem === "Resultado da caça:\n") {
                     mensagem += "Nenhuma presa capturada desta vez.";
                 }
 
-                exibirMensagem(mensagem);
+                gameState.resultadoCaca = mensagem;
                 habilitarProximoDia();
             } else {
                 exibirMensagem("Você não tem soldados para caçar!");
