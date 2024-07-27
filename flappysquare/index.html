@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Square</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let bird, pipes, score, gameOver, gameStarted;
+
+        function initGame() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            bird = {
+                x: 50,
+                y: canvas.height / 2,
+                width: 30,
+                height: 30,
+                velocity: 0
+            };
+
+            pipes = [];
+            score = 0;
+            gameOver = false;
+            gameStarted = false;
+
+            generatePipe();
+        }
+
+        function generatePipe() {
+            const gap = 200;
+            const pipeY = Math.random() * (canvas.height - gap - 100) + 50;
+            pipes.push({
+                x: canvas.width,
+                top: pipeY,
+                bottom: pipeY + gap
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = '#70c5ce';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw bird
+            ctx.fillStyle = 'yellow';
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+            // Draw pipes
+            ctx.fillStyle = 'green';
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, 50, pipe.top);
+                ctx.fillRect(pipe.x, pipe.bottom, 50, canvas.height - pipe.bottom);
+            });
+
+            // Draw score
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+
+            if (!gameStarted) {
+                ctx.fillStyle = 'white';
+                ctx.font = '30px Arial';
+                ctx.fillText('Flappy Square: Toque para iniciar', canvas.width / 2 - 100, canvas.height / 2);
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = 'white';
+                ctx.font = '30px Arial';
+                ctx.fillText('Você perdeu - Toque para reiniciar', canvas.width / 2 - 150, canvas.height / 2);
+            }
+        }
+
+        function update() {
+            if (!gameStarted || gameOver) return;
+
+            bird.velocity += 0.5;
+            bird.y += bird.velocity;
+
+            pipes.forEach(pipe => {
+                pipe.x -= 2;
+
+                if (pipe.x + 50 < bird.x && !pipe.passed) {
+                    score++;
+                    pipe.passed = true;
+                }
+
+                if (bird.x < pipe.x + 50 &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.top || bird.y + bird.height > pipe.bottom)) {
+                    gameOver = true;
+                }
+            });
+
+            if (bird.y + bird.height > canvas.height || bird.y < 0) {
+                gameOver = true;
+            }
+
+            if (pipes[0].x < -50) {
+                pipes.shift();
+                generatePipe();
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function jump() {
+            if (!gameStarted) {
+                gameStarted = true;
+            } else if (gameOver) {
+                initGame();
+            } else {
+                bird.velocity = -8;
+            }
+        }
+
+        canvas.addEventListener('click', jump);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        window.addEventListener('resize', initGame);
+
+        initGame();
+        gameLoop();
+    </script>
+</body>
+</html>
