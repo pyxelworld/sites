@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rei da Ãfrica</title>
+    <title>Rei da África</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -101,7 +101,7 @@
 
 <body>
     <div class="container">
-        <h1>Rei da Ãfrica</h1>
+        <h1>Rei da África</h1>
         <div class="game-board">
             <div class="status-container" id="status"></div>
             <div class="actions-container">
@@ -111,10 +111,10 @@
                 <button onclick="comprarSoldados()">Comprar Soldados</button>
                 <button onclick="guerrear()">Guerrear</button>
                 <button onclick="minerar()">Minerar</button>
-                <button onclick="cacar()">CaÃ§ar</button>
+                <button onclick="cacar()">Caçar</button>
             </div>
             <input type="number" id="quantidade" placeholder="Quantidade" value="1">
-            <button id="proximoDia" onclick="proximoDia()" disabled>PrÃ³ximo Dia</button>
+            <button id="proximoDia" onclick="proximoDia()" disabled>Próximo Dia</button>
             <button onclick="novoJogo()">Novo Jogo</button>
             <div id="mensagem"></div>
         </div>
@@ -240,11 +240,11 @@ status.innerHTML = `
 
 <div class="status-item"><h3>Presas Terrestres</h3><p>${gameState.presasTerrestres}</p></div>
 
-<div class="status-item"><h3>Presas MarÃ­timas</h3><p>${gameState.presasMaritimas}</p></div>
+<div class="status-item"><h3>Presas Marítimas</h3><p>${gameState.presasMaritimas}</p></div>
 
-<div class="status-item"><h3>TerritÃ³rios</h3><p>${gameState.territorios}</p></div>
+<div class="status-item"><h3>Territórios</h3><p>${gameState.territorios}</p></div>
 
-<div class="status-item"><h3>Soldados para Ãfrica do Sul</h3><p>${soldadosNecessarios}</p></div>
+<div class="status-item"><h3>Soldados para África do Sul</h3><p>${soldadosNecessarios}</p></div>
 
 `;
 
@@ -274,7 +274,7 @@ const ganhoEscravos = gameState.escravos * 6;
 
 gameState.pyxelCoins += ganhoHomens + ganhoEscravos;
 
-let mensagem = `Dia ${gameState.dia} iniciado. Ganho diÃ¡rio: ${ganhoHomens + ganhoEscravos} PyxelCoins`;
+let mensagem = `Dia ${gameState.dia} iniciado. Ganho diário: ${ganhoHomens + ganhoEscravos} PyxelCoins`;
 
 if (gameState.mineracaoAtiva) {
 
@@ -330,7 +330,7 @@ mensagemElement.style.display = 'block';
 
 function trabalhar() {
 
-exibirMensagem("Seus homens e escravos trabalharÃ£o automaticamente no prÃ³ximo dia.");
+exibirMensagem("Seus homens e escravos trabalharão automaticamente no próximo dia.");
 
 habilitarProximoDia();
 
@@ -348,7 +348,7 @@ gameState.homens += quantidade;
 
 gameState.pyxelCoins -= custo;
 
-exibirMensagem(`VocÃª comprou ${quantidade} homens por ${custo} PyxelCoins.`);
+exibirMensagem(`Você comprou ${quantidade} homens por ${custo} PyxelCoins.`);
 
 habilitarProximoDia();
 
@@ -374,7 +374,7 @@ gameState.homens -= quantidade;
 
 gameState.pyxelCoins += ganho;
 
-exibirMensagem(`VocÃª vendeu ${quantidade} homens por ${ganho} PyxelCoins.`);
+exibirMensagem(`Você vendeu ${quantidade} homens por ${ganho} PyxelCoins.`);
 
 habilitarProximoDia();
 
@@ -400,7 +400,7 @@ gameState.soldados += quantidade;
 
 gameState.pyxelCoins -= custo;
 
-exibirMensagem(`VocÃª comprou ${quantidade} soldados por ${custo} PyxelCoins.`);
+exibirMensagem(`Você comprou ${quantidade} soldados por ${custo} PyxelCoins.`);
 
 habilitarProximoDia();
 
@@ -450,7 +450,7 @@ gameState.escravos += ganhoEscravos;
 
 gameState.territorios++;
 
-return `VitÃ³ria! VocÃª ganhou ${ganhoHomens} homens, ${ganhoSoldados} soldados, ${ganhoPyxelCoins} PyxelCoins, ${ganhoEscravos} escravos e 1 territÃ³rio.`;
+return `Vitória! Você ganhou ${ganhoHomens} homens, ${ganhoSoldados} soldados, ${ganhoPyxelCoins} PyxelCoins, ${ganhoEscravos} escravos e 1 território.`;
 
 } else {
 
@@ -468,7 +468,7 @@ gameState.pyxelCoins = Math.max(0, gameState.pyxelCoins - perdaPyxelCoins);
 
 gameState.territorios = Math.max(0, gameState.territorios - 1);
 
-return `Derrota! VocÃª perdeu ${perdaHomens} homens, ${perdaSoldados} soldados, ${perdaPyxelCoins} PyxelCoins e 1 territÃ³rio.`;
+return `Derrota! Você perdeu ${perdaHomens} homens, ${perdaSoldados} soldados, ${perdaPyxelCoins} PyxelCoins e 1 território.`;
 
 }
 
@@ -480,13 +480,13 @@ if (gameState.escravos > 0) {
 
 gameState.mineracaoAtiva = true;
 
-exibirMensagem("A mineraÃ§Ã£o comeÃ§arÃ¡ no prÃ³ximo dia.");
+exibirMensagem("A mineração começará no próximo dia.");
 
 habilitarProximoDia();
 
 } else {
 
-exibirMensagem("VocÃª nÃ£o tem escravos para minerar!");
+exibirMensagem("Você não tem escravos para minerar!");
 
 }
 
@@ -498,7 +498,7 @@ const chanceOuro = Math.random();
 
 const chanceCobre = Math.random();
 
-let mensagem = "Resultado da mineraÃ§Ã£o:\n";
+let mensagem = "Resultado da mineração:\n";
 
 if (chanceOuro < 0.01) {
 
@@ -522,7 +522,7 @@ mensagem += `Encontrou ${cobreEncontrado} cobre! (+${cobreEncontrado * 500} Pyxe
 
 }
 
-if (mensagem === "Resultado da mineraÃ§Ã£o:\n") {
+if (mensagem === "Resultado da mineração:\n") {
 
 mensagem += "Nada encontrado desta vez.";
 
@@ -538,13 +538,13 @@ if (gameState.soldados > 0) {
 
 gameState.cacaAtiva = true;
 
-exibirMensagem("A caÃ§ada comeÃ§arÃ¡ no prÃ³ximo dia.");
+exibirMensagem("A caçada começará no próximo dia.");
 
 habilitarProximoDia();
 
 } else {
 
-exibirMensagem("VocÃª nÃ£o tem soldados para caÃ§ar!");
+exibirMensagem("Você não tem soldados para caçar!");
 
 }
 
@@ -556,7 +556,7 @@ const chanceTerrestre = Math.random();
 
 const chanceMaritima = Math.random();
 
-let mensagem = "Resultado da caÃ§a:\n";
+let mensagem = "Resultado da caça:\n";
 
 if (chanceTerrestre < 0.3) {
 
@@ -578,11 +578,11 @@ gameState.presasMaritimas += presasCapturadas;
 
 gameState.pyxelCoins += presasCapturadas * 15000;
 
-mensagem += `Capturou ${presasCapturadas} presas marÃ­timas! (+${presasCapturadas * 15000} PyxelCoins)\n`;
+mensagem += `Capturou ${presasCapturadas} presas marítimas! (+${presasCapturadas * 15000} PyxelCoins)\n`;
 
 }
 
-if (mensagem === "Resultado da caÃ§a:\n") {
+if (mensagem === "Resultado da caça:\n") {
 
 mensagem += "Nenhuma presa capturada desta vez.";
 
