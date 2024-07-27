@@ -381,6 +381,22 @@
             atualizarStatus();
         }
 
+        function verificarVitoria() {
+            if (gameState.soldados >= 400000) {
+                exibirMensagem("Parabéns! Você conquistou a África do Sul e venceu o jogo!");
+                return true;
+            }
+            return false;
+        }
+
+        function verificarDerrota() {
+            if (gameState.homens === 0 && gameState.soldados === 0 && gameState.pyxelCoins < 3000) {
+                exibirMensagem("Você perdeu! Não tem mais recursos para continuar o jogo.");
+                return true;
+            }
+            return false;
+        }
+
         window.onload = function() {
             carregarJogo();
             atualizarStatus();
