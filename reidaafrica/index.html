@@ -128,7 +128,9 @@
             presasMaritimas: 0,
             territorios: 0,
             dia: 1,
-            acaoRealizada: false
+            acaoRealizada: false,
+            mineracaoAtiva: false,
+            cacaAtiva: false
         };
 
         function salvarJogo() {
@@ -155,7 +157,9 @@
                 presasMaritimas: 0,
                 territorios: 0,
                 dia: 1,
-                acaoRealizada: false
+                acaoRealizada: false,
+                mineracaoAtiva: false,
+                cacaAtiva: false
             };
             salvarJogo();
             atualizarStatus();
@@ -196,15 +200,29 @@
                 const ganhoEscravos = gameState.escravos * 6;
                 gameState.pyxelCoins += ganhoHomens + ganhoEscravos;
 
+                let mensagem = `Dia ${gameState.dia} iniciado. Ganho diário: ${ganhoHomens + ganhoEscravos} PyxelCoins`;
+
+                if (gameState.mineracaoAtiva) {
+                    const resultadoMineracao = processarMineracao();
+                    mensagem += "\n" + resultadoMineracao;
+                    gameState.mineracaoAtiva = false;
+                }
+
+                if (gameState.cacaAtiva) {
+                    const resultadoCaca = processarCaca();
+                    mensagem += "\n" + resultadoCaca;
+                    gameState.cacaAtiva = false;
+                }
+
                 if (Math.random() < 0.2) {
                     const resultado = guerraAleatoria();
-                    exibirMensagem(resultado);
+                    mensagem += "\n" + resultado;
                 }
 
                 atualizarStatus();
                 gameState.acaoRealizada = false;
                 document.getElementById('proximoDia').disabled = true;
-                exibirMensagem(`Dia ${gameState.dia} iniciado. Ganho diário: ${ganhoHomens + ganhoEscravos} PyxelCoins`);
+                exibirMensagem(mensagem);
                 salvarJogo();
             }
         }
@@ -299,65 +317,73 @@
 
         function minerar() {
             if (gameState.escravos > 0) {
-                const chanceOuro = Math.random();
-                const chanceCobre = Math.random();
-                let mensagem = "Resultado da mineração:\n";
-
-                if (chanceOuro < 0.01) {
-                    gameState.ouro++;
-                    gameState.pyxelCoins += 80000;
-                    mensagem += "Encontrou 1 ouro! (+80000 PyxelCoins)\n";
-                }
-
-                if (chanceCobre < 0.1) {
-                    const cobreEncontrado = Math.floor(Math.random() * 5) + 1;
-                    gameState.cobre += cobreEncontrado;
-                    gameState.pyxelCoins += cobreEncontrado * 500;
-                    mensagem += `Encontrou ${cobreEncontrado} cobre! (+${cobreEncontrado * 500} PyxelCoins)\n`;
-                }
-
-                if (mensagem === "Resultado da mineração:\n") {
-                    mensagem += "Nada encontrado desta vez.";
-                }
-
-                exibirMensagem(mensagem);
+                gameState.mineracaoAtiva = true;
+                exibirMensagem("A mineração começará no próximo dia.");
                 habilitarProximoDia();
             } else {
                 exibirMensagem("Você não tem escravos para minerar!");
             }
-            atualizarStatus();
+        }
+
+        function processarMineracao() {
+            const chanceOuro = Math.random();
+            const chanceCobre = Math.random();
+            let mensagem = "Resultado da mineração:\n";
+
+            if (chanceOuro < 0.01) {
+                gameState.ouro++;
+                gameState.pyxelCoins += 80000;
+                mensagem += "Encontrou 1 ouro! (+80000 PyxelCoins)\n";
+            }
+
+            if (chanceCobre < 0.1) {
+                const cobreEncontrado = Math.floor(Math.random() * 5) + 1;
+                gameState.cobre += cobreEncontrado;
+                gameState.pyxelCoins += cobreEncontrado * 500;
+                mensagem += `Encontrou ${cobreEncontrado} cobre! (+${cobreEncontrado * 500} PyxelCoins)\n`;
+            }
+
+            if (mensagem === "Resultado da mineração:\n") {
+                mensagem += "Nada encontrado desta vez.";
+            }
+
+            return mensagem;
         }
 
         function cacar() {
             if (gameState.soldados > 0) {
-                const chanceTerrestre = Math.random();
-                const chanceMaritima = Math.random();
-                let mensagem = "Resultado da caça:\n";
-
-                if (chanceTerrestre < 0.3) {
-                    const presasCapturadas = Math.floor(Math.random() * 3) + 1;
-                    gameState.presasTerrestres += presasCapturadas;
-                    gameState.pyxelCoins += presasCapturadas * 1500;
-                    mensagem += `Capturou ${presasCapturadas} presas terrestres! (+${presasCapturadas * 1500} PyxelCoins)\n`;
-                }
-
-                if (chanceMaritima < 0.2) {
-                    const presasCapturadas = Math.floor(Math.random() * 2) + 1;
-                    gameState.presasMaritimas += presasCapturadas;
-                    gameState.pyxelCoins += presasCapturadas * 1800;
-                    mensagem += `Capturou ${presasCapturadas} presas marítimas! (+${presasCapturadas * 1800} PyxelCoins)\n`;
-                }
-
-                if (mensagem === "Resultado da caça:\n") {
-                    mensagem += "Nenhuma presa capturada desta vez.";
-                }
-
-                exibirMensagem(mensagem);
+                gameState.cacaAtiva = true;
+                exibirMensagem("A caçada começará no próximo dia.");
                 habilitarProximoDia();
             } else {
                 exibirMensagem("Você não tem soldados para caçar!");
             }
-            atualizarStatus();
+        }
+
+        function processarCaca() {
+            const chanceTerrestre = Math.random();
+            const chanceMaritima = Math.random();
+            let mensagem = "Resultado da caça:\n";
+
+            if (chanceTerrestre < 0.3) {
+                const presasCapturadas = Math.floor(Math.random() * 3) + 1;
+                gameState.presasTerrestres += presasCapturadas;
+                gameState.pyxelCoins += presasCapturadas * 5000;
+                mensagem += `Capturou ${presasCapturadas} presas terrestres! (+${presasCapturadas * 5000} PyxelCoins)\n`;
+            }
+
+            if (chanceMaritima < 0.1) {
+                const presasCapturadas = Math.floor(Math.random() * 2) + 1;
+                gameState.presasMaritimas += presasCapturadas;
+                gameState.pyxelCoins += presasCapturadas * 15000;
+                mensagem += `Capturou ${presasCapturadas} presas marítimas! (+${presasCapturadas * 15000} PyxelCoins)\n`;
+            }
+
+            if (mensagem === "Resultado da caça:\n") {
+                mensagem += "Nenhuma presa capturada desta vez.";
+            }
+
+            return mensagem;
         }
 
         window.onload = function() {
