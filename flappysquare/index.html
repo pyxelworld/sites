@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Square 2</title>
+    <title>Flappy Square</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body {
@@ -99,6 +99,9 @@
             canvas.addEventListener('touchstart', handleInteraction, { passive: false });
             canvas.addEventListener('click', handleInteraction);
             document.getElementById('pauseButton').addEventListener('click', togglePause);
+            
+            // Adicionando event listener para teclas
+            window.addEventListener('keydown', handleKeyPress);
 
             gameLoop();
         }
@@ -118,7 +121,7 @@
 
             pipes = [];
             pipeWidth = isLandscape ? Math.min(canvas.width * 0.08, canvas.height * 0.15) : Math.min(canvas.width * 0.1, canvas.height * 0.2);
-            pipeGap = isLandscape ? canvas.height * 0.28 : canvas.height * 0.25; // Reduced gap for vertical screens
+            pipeGap = isLandscape ? canvas.height * 0.28 : canvas.height * 0.25;
             pipeSpacing = isLandscape ? canvas.width * 0.6 : canvas.width * 0.75;
             groundHeight = canvas.height * 0.1;
 
@@ -128,8 +131,8 @@
             gameStarted = false;
             birdStopped = true;
 
-            gameSpeed = isLandscape ? canvas.width * 0.003 : canvas.width * 0.004; // Increased speed for vertical screens
-            backgroundSpeed = isLandscape ? canvas.width * 0.002 : canvas.width * 0.003; // Increased background speed for vertical screens
+            gameSpeed = isLandscape ? canvas.width * 0.003 : canvas.width * 0.004;
+            backgroundSpeed = isLandscape ? canvas.width * 0.002 : canvas.width * 0.003;
 
             generateInitialPipes();
             createBackgroundGradient();
@@ -280,7 +283,8 @@
             
             ctx.fillStyle = 'white';
             ctx.font = `${Math.min(canvas.width, canvas.height) * 0.03}px 'Press Start 2P'`;
-            ctx.fillText('Toque para iniciar', canvas.width / 2, canvas.height * 0.5);
+            ctx.fillText('Toque ou pressione ESPAÇO', canvas.width / 2, canvas.height * 0.5);
+            ctx.fillText('para iniciar', canvas.width / 2, canvas.height * 0.55);
         }
 
         function gameLoop() {
@@ -309,7 +313,8 @@
                         ctx.fillStyle = 'white';
                         ctx.font = `${Math.min(canvas.width, canvas.height) * 0.04}px 'Press Start 2P'`;
                         ctx.fillText(`Pontuação: ${score}`, canvas.width / 2, canvas.height * 0.5);
-                        ctx.fillText('Toque para reiniciar', canvas.width / 2, canvas.height * 0.6);
+                        ctx.fillText('Toque ou pressione ESPAÇO', canvas.width / 2, canvas.height * 0.6);
+                        ctx.fillText('para reiniciar', canvas.width / 2, canvas.height * 0.65);
                     }
                 }
 
@@ -341,6 +346,19 @@
         function togglePause() {
             isPaused = !isPaused;
             document.getElementById('pauseButton').textContent = isPaused ? 'Retomar' : 'Pausar';
+        }
+
+        // Nova função para lidar com teclas pressionadas
+        function handleKeyPress(e) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!isPaused) {
+                    jump();
+                }
+            } else if (e.code === 'Escape') {
+                e.preventDefault();
+                togglePause();
+            }
         }
 
         window.onerror = function(message, source, lineno, colno, error) {
