@@ -93,6 +93,34 @@
             text-align: center;
             font-weight: bold;
         }
+        #telaVitoria {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .vitoria-conteudo {
+            background-color: #deb887;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+        .vitoria-conteudo h2 {
+            color: #8b4513;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .vitoria-conteudo p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
     </style>
 </head>
 <body>
@@ -101,7 +129,6 @@
         <div class="game-board">
             <div class="status-container" id="status"></div>
             <div class="actions-container">
-                <button onclick="trabalhar()">Trabalhar</button>
                 <button onclick="comprarHomens()">Comprar Homens</button>
                 <button onclick="venderHomens()">Vender Homens</button>
                 <button onclick="comprarSoldados()">Comprar Soldados</button>
@@ -113,6 +140,14 @@
             <button id="proximoDia" onclick="proximoDia()" disabled>Próximo Dia</button>
             <button onclick="novoJogo()">Novo Jogo</button>
             <div id="mensagem"></div>
+        </div>
+    </div>
+
+    <div id="telaVitoria" style="display: none;">
+        <div class="vitoria-conteudo">
+            <h2>Parabéns!</h2>
+            <p>Você conquistou a África do Sul e se tornou o verdadeiro Rei da África!</p>
+            <button onclick="novoJogo()">Novo Jogo</button>
         </div>
     </div>
 
@@ -168,6 +203,7 @@ function novoJogo() {
     document.getElementById('proximoDia').disabled = true;
     document.getElementById('quantidade').value = '1';
     exibirMensagem("Novo jogo iniciado!");
+    document.getElementById('telaVitoria').style.display = 'none';
 }
 
 function atualizarStatus() {
@@ -187,6 +223,13 @@ function atualizarStatus() {
         <div class="status-item"><h3>Soldados para África do Sul</h3><p>${soldadosNecessarios}</p></div>
     `;
     salvarJogo();
+    verificarVitoria();
+}
+
+function verificarVitoria() {
+    if (gameState.soldados >= 400000) {
+        document.getElementById('telaVitoria').style.display = 'flex';
+    }
 }
 
 function habilitarProximoDia() {
@@ -233,11 +276,6 @@ function exibirMensagem(msg) {
     const mensagemElement = document.getElementById('mensagem');
     mensagemElement.textContent = msg;
     mensagemElement.style.display = 'block';
-}
-
-function trabalhar() {
-    exibirMensagem("Seus homens e escravos trabalharão automaticamente no próximo dia.");
-    habilitarProximoDia();
 }
 
 function comprarHomens() {
@@ -314,44 +352,37 @@ function processarGuerra() {
 }
 
 function minerar() {
-    if (gameState.escravos > 0) {
-        gameState.mineracaoAtiva = true;
-        exibirMensagem("A mineração começará no próximo dia.");
-        habilitarProximoDia();
-    } else {
-        exibirMensagem("Você não tem escravos para minerar!");
-    }
+    gameState.mineracaoAtiva = true;
+    exibirMensagem("A mineração começará no próximo dia.");
+    habilitarProximoDia();
 }
 
 function processarMineracao() {
     const chanceOuro = Math.random();
     const chanceCobre = Math.random();
     let mensagem = "Resultado da mineração:\n";
-    if (chanceOuro < 0.01) {
-        gameState.ouro++;
-        gameState.pyxelCoins += 80000;
-        mensagem += "Encontrou 1 ouro! (+80000 PyxelCoins)\n";
+    if (chanceOuro < 0.3) {
+        const ouroMinerado = Math.floor(Math.random() * 5) + 1;
+        gameState.ouro += ouroMinerado;
+        gameState.pyxelCoins += ouroMinerado * 5000;
+        mensagem += `Minerou ${ouroMinerado} de ouro! (+${ouroMinerado * 5000} PyxelCoins)\n`;
     }
-    if (chanceCobre < 0.1) {
-        const cobreEncontrado = Math.floor(Math.random() * 5) + 1;
-        gameState.cobre += cobreEncontrado;
-        gameState.pyxelCoins += cobreEncontrado * 500;
-        mensagem += `Encontrou ${cobreEncontrado} cobre! (+${cobreEncontrado * 500} PyxelCoins)\n`;
+    if (chanceCobre < 0.6) {
+        const cobreMinerado = Math.floor(Math.random() * 10) + 1;
+        gameState.cobre += cobreMinerado;
+        gameState.pyxelCoins += cobreMinerado * 1000;
+        mensagem += `Minerou ${cobreMinerado} de cobre! (+${cobreMinerado * 1000} PyxelCoins)\n`;
     }
     if (mensagem === "Resultado da mineração:\n") {
-        mensagem += "Nada encontrado desta vez.";
+        mensagem += "Nenhum minério encontrado desta vez.";
     }
     return mensagem;
 }
 
 function cacar() {
-    if (gameState.soldados > 0) {
-        gameState.cacaAtiva = true;
-        exibirMensagem("A caçada começará no próximo dia.");
-        habilitarProximoDia();
-    } else {
-        exibirMensagem("Você não tem soldados para caçar!");
-    }
+    gameState.cacaAtiva = true;
+    exibirMensagem("A caçada começará no próximo dia.");
+    habilitarProximoDia();
 }
 
 function processarCaca() {
