@@ -5,50 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Corrida do Relâmpago McQueen</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            font-family: 'Bangers', cursive;
             touch-action: manipulation;
         }
         #gameContainer {
             width: 300px;
-            height: 400px;
-            background-color: #333;
+            height: 500px;
+            background-color: #34495e;
             position: relative;
             overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        #road {
+            position: absolute;
+            width: 100%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                0deg,
+                #2c3e50 0px,
+                #2c3e50 10px,
+                #34495e 10px,
+                #34495e 20px
+            );
+            animation: moveRoad 0.5s linear infinite;
+        }
+        @keyframes moveRoad {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(20px); }
         }
         #car {
-            width: 50px;
-            height: 80px;
-            background-color: red;
+            width: 60px;
+            height: 100px;
+            background-color: #e74c3c;
             position: absolute;
             bottom: 20px;
             transition: left 0.1s;
+            border-radius: 10px;
         }
+        #carBody {
+            width: 100%;
+            height: 70%;
+            background-color: #c0392b;
+            position: absolute;
+            bottom: 0;
+            border-radius: 10px;
+        }
+        #carRoof {
+            width: 80%;
+            height: 30%;
+            background-color: #e74c3c;
+            position: absolute;
+            top: 0;
+            left: 10%;
+            border-radius: 50% 50% 0 0;
+        }
+        #carWindow {
+            width: 60%;
+            height: 20%;
+            background-color: #3498db;
+            position: absolute;
+            top: 25%;
+            left: 20%;
+            border-radius: 5px;
+        }
+        .wheel {
+            width: 20px;
+            height: 20px;
+            background-color: #2c3e50;
+            position: absolute;
+            bottom: 0;
+            border-radius: 50%;
+        }
+        #wheelLeft { left: 5px; }
+        #wheelRight { right: 5px; }
         .obstacle {
             width: 100px;
             height: 20px;
-            background-color: #888;
+            background-color: #e74c3c;
             position: absolute;
+            border-radius: 10px;
         }
-        #score {
+        #scoreBoard {
             position: absolute;
             top: 10px;
             left: 10px;
-            color: white;
+            color: #ecf0f1;
+            font-size: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         #highScore {
-            position: absolute;
-            top: 30px;
-            left: 10px;
-            color: yellow;
+            color: #f1c40f;
         }
-        #gameOver {
+        #gameOver, #startScreen {
             position: absolute;
             top: 0;
             left: 0;
@@ -59,15 +117,28 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
-            font-size: 24px;
-            display: none;
+            color: #ecf0f1;
+            font-size: 30px;
+            text-align: center;
         }
-        #restartButton {
+        #startScreen {
+            background-color: rgba(52, 73, 94, 0.9);
+        }
+        .button {
             margin-top: 20px;
             padding: 10px 20px;
-            font-size: 18px;
+            font-size: 24px;
             cursor: pointer;
+            background-color: #e74c3c;
+            color: #ecf0f1;
+            border: none;
+            border-radius: 5px;
+            font-family: 'Bangers', cursive;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.7);
         }
         #controls {
             position: absolute;
@@ -80,27 +151,45 @@
         .control-button {
             width: 80px;
             height: 80px;
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(231, 76, 60, 0.7);
             border: none;
             border-radius: 50%;
             font-size: 24px;
-            color: white;
+            color: #ecf0f1;
             display: flex;
             justify-content: center;
             align-items: center;
             user-select: none;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .control-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.9);
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <div id="car"></div>
-        <div id="score">Pontuação: 0</div>
-        <div id="highScore">Recorde: 0</div>
+        <div id="road"></div>
+        <div id="car">
+            <div id="carBody"></div>
+            <div id="carRoof"></div>
+            <div id="carWindow"></div>
+            <div id="wheelLeft" class="wheel"></div>
+            <div id="wheelRight" class="wheel"></div>
+        </div>
+        <div id="scoreBoard">
+            <div id="score">Pontuação: 0</div>
+            <div id="highScore">Recorde: 0</div>
+        </div>
         <div id="gameOver">
             <div>Game Over</div>
             <div id="finalScore"></div>
-            <button id="restartButton">Reiniciar</button>
+            <button id="restartButton" class="button">Reiniciar</button>
+        </div>
+        <div id="startScreen">
+            <h1>Corrida do<br>Relâmpago McQueen</h1>
+            <button id="startButton" class="button">Iniciar</button>
         </div>
         <div id="controls">
             <button id="leftButton" class="control-button">←</button>
@@ -109,13 +198,16 @@
     </div>
 
     <script>
+        // O script permanece o mesmo que na versão anterior
         const car = document.getElementById('car');
         const gameContainer = document.getElementById('gameContainer');
         const scoreElement = document.getElementById('score');
         const highScoreElement = document.getElementById('highScore');
         const gameOverScreen = document.getElementById('gameOver');
+        const startScreen = document.getElementById('startScreen');
         const finalScoreElement = document.getElementById('finalScore');
         const restartButton = document.getElementById('restartButton');
+        const startButton = document.getElementById('startButton');
         const leftButton = document.getElementById('leftButton');
         const rightButton = document.getElementById('rightButton');
 
@@ -125,7 +217,7 @@
         let gameLoop;
         let scoreInterval;
         let lastObstacleBottom = -1000;
-        let minObstacleDistance = 120;
+        let minObstacleDistance = 150;
         let obstacleSpeed = 5;
 
         function moveCar(direction) {
@@ -134,7 +226,7 @@
             } else if (direction === 'right' && carPosition < 2) {
                 carPosition++;
             }
-            car.style.left = `${carPosition * 100 + 25}px`;
+            car.style.left = `${carPosition * 100 + 20}px`;
         }
 
         function createObstacle() {
@@ -149,7 +241,7 @@
 
             function moveObstacle() {
                 const obstacleTop = parseInt(obstacle.style.top);
-                if (obstacleTop > 400) {
+                if (obstacleTop > 500) {
                     gameContainer.removeChild(obstacle);
                     lastObstacleBottom = -1000;
                     return;
@@ -157,13 +249,13 @@
 
                 obstacle.style.top = `${obstacleTop + obstacleSpeed}px`;
 
-                if (obstacleTop > 300 && obstacleTop < 380) {
-                    const carLeft = carPosition * 100 + 25;
+                if (obstacleTop > 380 && obstacleTop < 480) {
+                    const carLeft = carPosition * 100 + 20;
                     const obstacleLeft = lane * 100;
                     if (
                         carLeft < obstacleLeft + width &&
-                        carLeft + 50 > obstacleLeft &&
-                        380 > obstacleTop
+                        carLeft + 60 > obstacleLeft &&
+                        480 > obstacleTop
                     ) {
                         endGame();
                         return;
@@ -199,12 +291,13 @@
         function startGame() {
             score = 0;
             carPosition = 1;
-            car.style.left = '125px';
+            car.style.left = '120px';
             obstacleSpeed = 5;
             lastObstacleBottom = -1000;
             gameLoop = setInterval(gameLoopFunction, 1000);
             scoreInterval = setInterval(updateScore, 100);
             gameOverScreen.style.display = 'none';
+            startScreen.style.display = 'none';
             
             const obstacles = document.querySelectorAll('.obstacle');
             obstacles.forEach(obstacle => obstacle.remove());
@@ -240,8 +333,7 @@
         });
 
         restartButton.addEventListener('click', startGame);
-
-        startGame();
+        startButton.addEventListener('click', startGame);
     </script>
 </body>
 </html>
