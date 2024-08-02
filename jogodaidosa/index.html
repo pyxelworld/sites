@@ -1,1 +1,434 @@
-<!DOCTYPE html> <html lang="pt-br"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Jogo da Idosa</title> <style> body { font-family: 'Comic Sans MS', cursive, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0e6ff; } .game-container { text-align: center; background-color: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.1); } h1 { color: #8a2be2; font-size: 36px; margin-bottom: 20px; } .board { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 10px; margin: 20px auto; } .cell { width: 100px; height: 100px; background-color: #e6d0ff; border: 3px solid #8a2be2; border-radius: 10px; font-size: 60px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; } .cell:hover { background-color: #d4b5ff; transform: scale(1.05); } .cell.x { color: #ff4136; } .cell.o { color: #0074d9; } .winner-cell { background-color: #ffdc00; animation: pulse 1s infinite; } @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } } button { margin: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #8a2be2; color: white; border: none; border-radius: 5px; transition: all 0.3s ease; } button:hover { background-color: #6a1b9a; transform: translateY(-2px); } #status { font-size: 24px; margin-bottom: 20px; color: #333; } .message-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; } .message-box { background-color: white; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 0 20px rgba(255,255,255,0.2); transform: scale(0.9); transition: all 0.3s ease; } .message-overlay.active { opacity: 1; pointer-events: all; } .message-overlay.active .message-box { transform: scale(1); } .message-title { font-size: 36px; margin-bottom: 20px; color: #8a2be2; } .message-content { font-size: 24px; margin-bottom: 20px; color: #333; } .message-button { font-size: 18px; padding: 10px 20px; background-color: #8a2be2; color: white; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; } .message-button:hover { background-color: #6a1b9a; } .defeat-overlay { background-color: rgba(255, 0, 0, 0.8); } .defeat-box { background-color: #ffcccc; } .defeat-title { color: #ff0000; } .defeat-content { color: #660000; } .defeat-button { background-color: #ff4444; } .defeat-button:hover { background-color: #cc0000; } </style> </head> <body> <div class="game-container"> <h1>Jogo da Idosa</h1> <div class="board" id="board"> <div class="cell" data-cell></div> <div class="cell" data-cell></div> <div class="cell" data-cell></div> <div class="cell" data-cell></div> <div class="cell" data-cell></div> <div class="cell" data-cell></div> <div class="cell" data-cell></div> <div class="cell" data-cell></div> <div class="cell" data-cell></div> </div> <div id="status">Escolha o modo de jogo</div> <div class="buttons"> <button id="pvp">Idosa vs Idosa</button> <button id="easy">Neta: Fácil</button> <button id="medium">Neta: Médio</button> <button id="hard">Neta: Difícil</button> <button id="reset" style="display: none;">Reiniciar Jogo</button> </div> </div> <div class="message-overlay" id="messageOverlay"> <div class="message-box"> <div class="message-title" id="messageTitle"></div> <div class="message-content" id="messageContent"></div> <button class="message-button" id="messageButton">Jogar Novamente</button> </div> </div> <script> const board = document.getElementById('board'); const cells = document.querySelectorAll('[data-cell]'); const status = document.getElementById('status'); const resetButton = document.getElementById('reset'); const pvpButton = document.getElementById('pvp'); const easyButton = document.getElementById('easy'); const mediumButton = document.getElementById('medium'); const hardButton = document.getElementById('hard'); const messageOverlay = document.getElementById('messageOverlay'); const messageTitle = document.getElementById('messageTitle'); const messageContent = document.getElementById('messageContent'); const messageButton = document.getElementById('messageButton'); let currentPlayer = 'X'; let gameActive = false; let isComputerOpponent = false; let difficulty = ''; const winningCombinations = [ [0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6] ]; function startGame(vsComputer, difficultyLevel) { isComputerOpponent = vsComputer; difficulty = difficultyLevel; gameActive = true; currentPlayer = 'X'; cells.forEach(cell => { cell.textContent = ''; cell.classList.remove('x', 'o', 'winner-cell'); }); status.textContent = 'Vez da Idosa X'; resetButton.style.display = 'block'; pvpButton.style.display = 'none'; easyButton.style.display = 'none'; mediumButton.style.display = 'none'; hardButton.style.display = 'none'; } function handleCellClick(e) { const cell = e.target; const cellIndex = Array.from(cells).indexOf(cell); if (cell.textContent || !gameActive) return; makeMove(cell, currentPlayer); if (gameActive && isComputerOpponent && currentPlayer === 'O') { setTimeout(computerMove, 500); } } function makeMove(cell, player) { cell.textContent = player; cell.classList.add(player.toLowerCase()); if (checkWin()) { gameActive = false; highlightWinningCells(); if (isComputerOpponent && player === 'O') { showDefeatMessage(); } else { showMessage('Vitória!', `Idosa ${player} venceu!`); } } else if (checkDraw()) { gameActive = false; showMessage('Empate!', 'As idosas são sábias!'); } else { currentPlayer = currentPlayer === 'X' ? 'O' : 'X'; status.textContent = `Vez da Idosa ${currentPlayer}`; } } function highlightWinningCells() { winningCombinations.forEach(combination => { if ( cells[combination[0]].textContent && cells[combination[0]].textContent === cells[combination[1]].textContent && cells[combination[0]].textContent === cells[combination[2]].textContent ) { combination.forEach(index => { cells[index].classList.add('winner-cell'); }); } }); } function computerMove() { if (!gameActive) return; let move; switch (difficulty) { case 'easy': move = getRandomMove(); break; case 'medium': move = getMediumMove(); break; case 'hard': move = getHardMove(); break; default: move = getRandomMove(); } makeMove(cells[move], 'O'); } function getRandomMove() { const emptyCells = Array.from(cells).filter(cell => !cell.textContent); return Array.from(cells).indexOf(emptyCells[Math.floor(Math.random() * emptyCells.length)]); } function getMediumMove() { const winningMove = findWinningMove('O'); if (winningMove !== -1) return winningMove; const blockingMove = findWinningMove('X'); if (blockingMove !== -1) return blockingMove; if (cells[4].textContent === '') return 4; const corners = [0, 2, 6, 8]; const emptyCorners = corners.filter(corner => cells[corner].textContent === ''); if (emptyCorners.length > 0) { return emptyCorners[Math.floor(Math.random() * emptyCorners.length)]; } return getRandomMove(); } function getHardMove() { return getBestMove(); } function findWinningMove(player) { for (let i = 0; i < 9; i++) { if (cells[i].textContent === '') { cells[i].textContent = player; if (checkWin()) { cells[i].textContent = ''; return i; } cells[i].textContent = ''; } } return -1; } function getBestMove() { let bestScore = -Infinity; let bestMove; for (let i = 0; i < 9; i++) { if (cells[i].textContent === '') { cells[i].textContent = 'O'; let score = minimax(0, false); cells[i].textContent = ''; if (score > bestScore) { bestScore = score; bestMove = i; } } } return bestMove; } function minimax(depth, isMaximizing) { if (checkWinForPlayer('O')) return 10 - depth; if (checkWinForPlayer('X')) return depth - 10; if (checkDraw()) return 0; if (isMaximizing) { let bestScore = -Infinity; for (let i = 0; i < 9; i++) { if (cells[i].textContent === '') { cells[i].textContent = 'O'; let score = minimax(depth + 1, false); cells[i].textContent = ''; bestScore = Math.max(score, bestScore); } } return bestScore; } else { let bestScore = Infinity; for (let i = 0; i < 9; i++) { if (cells[i].textContent === '') { cells[i].textContent = 'X'; let score = minimax(depth + 1, true); cells[i].textContent = ''; bestScore = Math.min(score, bestScore); } } return bestScore; } } function checkWinForPlayer(player) { return winningCombinations.some(combination => { return combination.every(index => { return cells[index].textContent === player; }); }); } function checkWin() { return checkWinForPlayer(currentPlayer); } function checkDraw() { return Array.from(cells).every(cell => cell.textContent); } function resetGame() { cells.forEach(cell => { cell.textContent = ''; cell.classList.remove('x', 'o', 'winner-cell'); }); gameActive = false; status.textContent = 'Escolha o modo de jogo'; resetButton.style.display = 'none'; pvpButton.style.display = 'inline-block'; easyButton.style.display = 'inline-block'; mediumButton.style.display = 'inline-block'; hardButton.style.display = 'inline-block'; } function showMessage(title, content) { messageTitle.textContent = title; messageContent.textContent = content; messageOverlay.classList.remove('defeat-overlay'); messageOverlay.querySelector('.message-box').classList.remove('defeat-box'); messageTitle.classList.remove('defeat-title'); messageContent.classList.remove('defeat-content'); messageButton.classList.remove('defeat-button'); messageOverlay.classList.add('active'); } function showDefeatMessage() { messageTitle.textContent = 'Derrota!'; messageContent.textContent = 'A Neta venceu desta vez!'; messageOverlay.classList.add('defeat-overlay'); messageOverlay.querySelector('.message-box').classList.add('defeat-box'); messageTitle.classList.add('defeat-title'); messageContent.classList.add('defeat-content'); messageButton.classList.add('defeat-button'); messageOverlay.classList.add('active'); } function hideMessage() { messageOverlay.classList.remove('active'); } cells.forEach(cell => cell.addEventListener('click', handleCellClick)); resetButton.addEventListener('click', resetGame); pvpButton.addEventListener('click', () => startGame(false, '')); easyButton.addEventListener('click', () => startGame(true, 'easy')); mediumButton.addEventListener('click', () => startGame(true, 'medium')); hardButton.addEventListener('click', () => startGame(true, 'hard')); messageButton.addEventListener('click', () => { hideMessage(); resetGame(); }); </script> </body> </html>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Idosa</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0e6ff;
+        }
+        .game-container {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #8a2be2;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 10px;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #e6d0ff;
+            border: 3px solid #8a2be2;
+            border-radius: 10px;
+            font-size: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .cell:hover {
+            background-color: #d4b5ff;
+            transform: scale(1.05);
+        }
+        .cell.x { color: #ff4136; }
+        .cell.o { color: #0074d9; }
+        .winner-cell {
+            background-color: #ffdc00;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #8a2be2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #6a1b9a;
+            transform: translateY(-2px);
+        }
+        #status {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .message-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .message-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+        .message-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .message-overlay.active .message-box {
+            transform: scale(1);
+        }
+        .message-title {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #8a2be2;
+        }
+        .message-content {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .message-button {
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: #8a2be2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .message-button:hover {
+            background-color: #6a1b9a;
+        }
+        .defeat-overlay { background-color: rgba(255, 0, 0, 0.8); }
+        .defeat-box { background-color: #ffcccc; }
+        .defeat-title { color: #ff0000; }
+        .defeat-content { color: #660000; }
+        .defeat-button { background-color: #ff4444; }
+        .defeat-button:hover { background-color: #cc0000; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Jogo da Idosa</h1>
+        <div class="board" id="board">
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+        </div>
+        <div id="status">Escolha o modo de jogo</div>
+        <div class="buttons">
+            <button id="pvp">Idosa vs Idosa</button>
+            <button id="easy">Neta: Fácil</button>
+            <button id="medium">Neta: Médio</button>
+            <button id="hard">Neta: Difícil</button>
+            <button id="reset" style="display: none;">Reiniciar Jogo</button>
+        </div>
+    </div>
+    <div class="message-overlay" id="messageOverlay">
+        <div class="message-box">
+            <div class="message-title" id="messageTitle"></div>
+            <div class="message-content" id="messageContent"></div>
+            <button class="message-button" id="messageButton">Jogar Novamente</button>
+        </div>
+    </div>
+    <script>
+        const board = document.getElementById('board');
+        const cells = document.querySelectorAll('[data-cell]');
+        const status = document.getElementById('status');
+        const resetButton = document.getElementById('reset');
+        const pvpButton = document.getElementById('pvp');
+        const easyButton = document.getElementById('easy');
+        const mediumButton = document.getElementById('medium');
+        const hardButton = document.getElementById('hard');
+        const messageOverlay = document.getElementById('messageOverlay');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageContent = document.getElementById('messageContent');
+        const messageButton = document.getElementById('messageButton');
+
+        let currentPlayer = 'X';
+        let gameActive = false;
+        let isComputerOpponent = false;
+        let difficulty = '';
+
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        function startGame(vsComputer, difficultyLevel) {
+            isComputerOpponent = vsComputer;
+            difficulty = difficultyLevel;
+            gameActive = true;
+            currentPlayer = 'X';
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o', 'winner-cell');
+            });
+            status.textContent = 'Vez da Idosa X';
+            resetButton.style.display = 'block';
+            pvpButton.style.display = 'none';
+            easyButton.style.display = 'none';
+            mediumButton.style.display = 'none';
+            hardButton.style.display = 'none';
+        }
+
+        function handleCellClick(e) {
+            const cell = e.target;
+            const cellIndex = Array.from(cells).indexOf(cell);
+            if (cell.textContent || !gameActive) return;
+            makeMove(cell, currentPlayer);
+            if (gameActive && isComputerOpponent && currentPlayer === 'O') {
+                setTimeout(computerMove, 500);
+            }
+        }
+
+        function makeMove(cell, player) {
+            cell.textContent = player;
+            cell.classList.add(player.toLowerCase());
+            if (checkWin()) {
+                gameActive = false;
+                highlightWinningCells();
+                if (isComputerOpponent && player === 'O') {
+                    showDefeatMessage();
+                } else {
+                    showMessage('Vitória!', `Idosa ${player} venceu!`);
+                }
+            } else if (checkDraw()) {
+                gameActive = false;
+                showMessage('Empate!', 'As idosas são sábias!');
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                status.textContent = `Vez da Idosa ${currentPlayer}`;
+            }
+        }
+
+        function highlightWinningCells() {
+            winningCombinations.forEach(combination => {
+                if (
+                    cells[combination[0]].textContent &&
+                    cells[combination[0]].textContent === cells[combination[1]].textContent &&
+                    cells[combination[0]].textContent === cells[combination[2]].textContent
+                ) {
+                    combination.forEach(index => {
+                        cells[index].classList.add('winner-cell');
+                    });
+                }
+            });
+        }
+
+        function computerMove() {
+            if (!gameActive) return;
+            let move;
+            switch (difficulty) {
+                case 'easy':
+                    move = getRandomMove();
+                    break;
+                case 'medium':
+                    move = getMediumMove();
+                    break;
+                case 'hard':
+                    move = getHardMove();
+                    break;
+                default:
+                    move = getRandomMove();
+            }
+            makeMove(cells[move], 'O');
+        }
+
+        function getRandomMove() {
+            const emptyCells = Array.from(cells).filter(cell => !cell.textContent);
+            return Array.from(cells).indexOf(emptyCells[Math.floor(Math.random() * emptyCells.length)]);
+        }
+
+        function getMediumMove() {
+            const winningMove = findWinningMove('O');
+            if (winningMove !== -1) return winningMove;
+            const blockingMove = findWinningMove('X');
+            if (blockingMove !== -1) return blockingMove;
+            if (cells[4].textContent === '') return 4;
+            const corners = [0, 2, 6, 8];
+            const emptyCorners = corners.filter(corner => cells[corner].textContent === '');
+            if (emptyCorners.length > 0) {
+                return emptyCorners[Math.floor(Math.random() * emptyCorners.length)];
+            }
+            return getRandomMove();
+        }
+
+        function getHardMove() {
+            return getBestMove();
+        }
+
+        function findWinningMove(player) {
+            for (let i = 0; i < 9; i++) {
+                if (cells[i].textContent === '') {
+                    cells[i].textContent = player;
+                    if (checkWin()) {
+                        cells[i].textContent = '';
+                        return i;
+                    }
+                    cells[i].textContent = '';
+                }
+            }
+            return -1;
+        }
+
+        function getBestMove() {
+            let bestScore = -Infinity;
+            let bestMove;
+            for (let i = 0; i < 9; i++) {
+                if (cells[i].textContent === '') {
+                    cells[i].textContent = 'O';
+                    let score = minimax(0, false);
+                    cells[i].textContent = '';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
+                }
+            }
+            return bestMove;
+        }
+
+        function minimax(depth, isMaximizing) {
+            if (checkWinForPlayer('O')) return 10 - depth;
+            if (checkWinForPlayer('X')) return depth - 10;
+            if (checkDraw()) return 0;
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (cells[i].textContent === '') {
+                        cells[i].textContent = 'O';
+                        let score = minimax(depth + 1, false);
+                        cells[i].textContent = '';
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (cells[i].textContent === '') {
+                        cells[i].textContent = 'X';
+                        let score = minimax(depth + 1, true);
+                        cells[i].textContent = '';
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        function checkWinForPlayer(player) {
+            return winningCombinations.some(combination => {
+                return combination.every(index => {
+                    return cells[index].textContent === player;
+                });
+            });
+        }
+
+        function checkWin() {
+            return checkWinForPlayer(currentPlayer);
+        }
+
+        function checkDraw() {
+            return Array.from(cells).every(cell => cell.textContent);
+        }
+
+        function resetGame() {
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o', 'winner-cell');
+            });
+            gameActive = false;
+            status.textContent = 'Escolha o modo de jogo';
+            resetButton.style.display = 'none';
+            pvpButton.style.display = 'inline-block';
+            easyButton.style.display = 'inline-block';
+            mediumButton.style.display = 'inline-block';
+            hardButton.style.display = 'inline-block';
+        }
+
+        function showMessage(title, content) {
+            messageTitle.textContent = title;
+            messageContent.textContent = content;
+            messageOverlay.classList.remove('defeat-overlay');
+            messageOverlay.querySelector('.message-box').classList.remove('defeat-box');
+            messageTitle.classList.remove('defeat-title');
+            messageContent.classList.remove('defeat-content');
+            messageButton.classList.remove('defeat-button');
+            messageOverlay.classList.add('active');
+        }
+
+        function showDefeatMessage() {
+            messageTitle.textContent = 'Derrota!';
+            messageContent.textContent = 'A Neta venceu desta vez!';
+            messageOverlay.classList.add('defeat-overlay');
+            messageOverlay.querySelector('.message-box').classList.add('defeat-box');
+            messageTitle.classList.add('defeat-title');
+            messageContent.classList.add('defeat-content');
+            messageButton.classList.add('defeat-button');
+            messageOverlay.classList.add('active');
+        }
+
+            function hideMessage() {
+                messageOverlay.classList.remove('active');
+            }
+
+            cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+
+            resetButton.addEventListener('click', resetGame);
+            pvpButton.addEventListener('click', () => startGame(false, ''));
+            easyButton.addEventListener('click', () => startGame(true, 'easy'));
+            mediumButton.addEventListener('click', () => startGame(true, 'medium'));
+            hardButton.addEventListener('click', () => startGame(true, 'hard'));
+            messageButton.addEventListener('click', () => {
+                hideMessage();
+                resetGame();
+            });
+
+            </script>
+            </body>
+            </html>
