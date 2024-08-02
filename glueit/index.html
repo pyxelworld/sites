@@ -6,35 +6,35 @@
     <title>Glue-It!</title>
     <style>
         body {
-            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-family: 'Arial', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f8ff;
-            background-image: radial-gradient(#87cefa 10%, transparent 10%),
-                              radial-gradient(#87cefa 10%, transparent 10%);
-            background-size: 30px 30px;
-            background-position: 0 0, 15px 15px;
+            background-color: #f0f0f0;
+            background-image: 
+                linear-gradient(#ccc 1px, transparent 1px),
+                linear-gradient(90deg, #ccc 1px, transparent 1px);
+            background-size: 20px 20px;
         }
         #game-container {
             text-align: center;
             background-color: white;
-            border-radius: 20px;
+            border-radius: 10px;
             padding: 20px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            color: #ff69b4;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            color: #333;
             font-size: 2.5em;
+            margin-bottom: 10px;
         }
         #grid {
             width: 200px;
             height: 400px;
-            background-color: #f5f5f5;
-            border: 4px solid #4682b4;
+            background-color: #e0e0e0;
+            border: 4px solid #333;
             border-radius: 10px;
             margin: 20px auto;
             position: relative;
@@ -59,13 +59,13 @@
             right: 0;
             border-width: 0 20px 20px 0;
             border-style: solid;
-            border-color: #ff9ac4 #f5f5f5;
+            border-color: #ff9ac4 #e0e0e0;
         }
-        #timer {
-            font-size: 36px;
+        #timer, #high-score {
+            font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
-            color: #4682b4;
+            color: #333;
         }
         #retry-btn {
             font-size: 18px;
@@ -73,18 +73,18 @@
             cursor: pointer;
             display: none;
             margin-top: 10px;
-            background-color: #ff69b4;
+            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
             transition: background-color 0.3s;
         }
         #retry-btn:hover {
-            background-color: #ff5ba2;
+            background-color: #45a049;
         }
         #instructions, #result {
-            color: #4682b4;
-            font-size: 18px;
+            color: #333;
+            font-size: 16px;
             margin-bottom: 10px;
         }
     </style>
@@ -94,6 +94,7 @@
         <h1>Glue-It!</h1>
         <p id="instructions">Clique na parede para colar os post-its o mais alto possível!</p>
         <div id="timer">3.0</div>
+        <div id="high-score">Recorde: 0 cm</div>
         <div id="grid">
             <div id="post-it"></div>
         </div>
@@ -108,10 +109,12 @@
         const timerDisplay = document.getElementById('timer');
         const retryBtn = document.getElementById('retry-btn');
         const instructions = document.getElementById('instructions');
+        const highScoreDisplay = document.getElementById('high-score');
         let clicks = 0;
         let gameActive = false;
         let startTime;
         let timerInterval;
+        let highScore = 0;
 
         grid.addEventListener('click', handleClick);
         retryBtn.addEventListener('click', resetGame);
@@ -163,6 +166,11 @@
             retryBtn.style.display = 'inline-block';
             instructions.style.display = 'block';
             instructions.textContent = 'Clique em "Tentar Novamente" para uma nova rodada de Glue-It!';
+            
+            if (heightInCm > highScore) {
+                highScore = heightInCm;
+                highScoreDisplay.textContent = `Recorde: ${highScore} cm`;
+            }
         }
 
         function resetGame() {
