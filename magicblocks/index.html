@@ -39,7 +39,7 @@
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.3);
         }
-        #score, #level, #lines {
+        #score, #level, #lines, #speed {
             font-size: 24px;
             margin-bottom: 10px;
         }
@@ -86,6 +86,7 @@
                 <div id="score">Pontuação: 0</div>
                 <div id="level">Nível: 1</div>
                 <div id="lines">Linhas: 0</div>
+                <div id="speed">Velocidade: 1</div>
             </div>
             <div id="controls">
                 <p>← → : Mover</p>
@@ -107,6 +108,7 @@
         const scoreElement = document.getElementById('score');
         const levelElement = document.getElementById('level');
         const linesElement = document.getElementById('lines');
+        const speedElement = document.getElementById('speed');
         const gameOverElement = document.getElementById('game-over');
         const finalScoreElement = document.getElementById('final-score');
         const restartBtn = document.getElementById('restart-btn');
@@ -124,6 +126,7 @@
         let lastTime = 0;
         let dropInterval = 1000;
         let dropCounter = 0;
+        let speed = 1;
 
         class Piece {
             constructor(shape, color) {
@@ -133,8 +136,9 @@
                 this.col = Math.floor(COLS / 2) - Math.ceil(shape[0].length / 2);
             }
 
-            draw() {
+            draw(opacity = 1) {
                 ctx.fillStyle = this.color;
+                ctx.globalAlpha = opacity;
                 this.shape.forEach((row, r) => {
                     row.forEach((value, c) => {
                         if (value) {
@@ -144,6 +148,7 @@
                         }
                     });
                 });
+                ctx.globalAlpha = 1;
             }
 
             move(rowOffset, colOffset) {
@@ -179,6 +184,21 @@
 
             drop() {
                 while (this.move(1, 0)) {}
+            }
+
+            getDropPosition() {
+                let dropRow = this.row;
+                while (dropRow < ROWS && !this.shape.some((row, r) => {
+                    return row.some((value, c) => {
+                        if (!value) return false;
+                        const newRow = dropRow + r + 1;
+                        const newCol = this.col + c;
+                        return newRow >= ROWS || (newRow >= 0 && board[newRow][newCol]);
+                    });
+                })) {
+                    dropRow++;
+                }
+                return dropRow;
             }
         }
 
@@ -231,7 +251,8 @@
                 lines += linesCleared;
                 score += linesCleared * 100 * level;
                 level = Math.floor(lines / 10) + 1;
-                dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+                speed = Math.min(10, Math.floor(level / 2) + 1);
+                dropInterval = Math.max(100, 1000 - (speed - 1) * 100);
                 updateScore();
             }
         }
@@ -240,6 +261,7 @@
             scoreElement.textContent = `Pontuação: ${score}`;
             levelElement.textContent = `Nível: ${level}`;
             linesElement.textContent = `Linhas: ${lines}`;
+            speedElement.textContent = `Velocidade: ${speed}`;
         }
 
         function gameOver() {
@@ -252,6 +274,7 @@
             score = 0;
             level = 1;
             lines = 0;
+            speed = 1;
             dropInterval = 1000;
             updateScore();
             gameOverElement.style.display = 'none';
@@ -283,6 +306,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBoard();
             if (currentPiece) {
+                const dropPosition = currentPiece.getDropPosition();
+                const ghostPiece = new Piece(currentPiece.shape, currentPiece.color);
+                ghostPiece.row = dropPosition;
+                ghostPiece.col = currentPiece.col;
+                ghostPiece.draw(0.3);
                 currentPiece.draw();
             }
 
