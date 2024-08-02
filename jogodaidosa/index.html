@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Idosa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #8E44AD;
+            --secondary-color: #E67E22;
+            --background-color: #F5EEF8;
+            --text-color: #34495E;
+            --cell-color: #FFFFFF;
+            --hover-color: #F0E6F6;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .game-container {
+            background-color: var(--cell-color);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            width: 400px;
+        }
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background-color: var(--cell-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            font-size: 2.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .cell:hover {
+            background-color: var(--hover-color);
+            transform: scale(1.05);
+        }
+        .cell.x {
+            color: var(--primary-color);
+        }
+        .cell.o {
+            color: var(--secondary-color);
+        }
+        #status {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            min-height: 1.5em;
+            color: var(--primary-color);
+        }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        button {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex: 1 0 calc(50% - 5px);
+        }
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #reset {
+            background-color: var(--secondary-color);
+        }
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            .cell {
+                font-size: 2rem;
+            }
+            button {
+                font-size: 0.9rem;
+                padding: 8px 16px;
+            }
+        }
+        .winner-cell {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Jogo da Idosa</h1>
+        <div class="board" id="board">
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+        </div>
+        <div id="status">Escolha o modo de jogo</div>
+        <div class="buttons">
+            <button id="pvp">Idosa vs Idosa</button>
+            <button id="easy">Neta: Fácil</button>
+            <button id="medium">Neta: Médio</button>
+            <button id="hard">Neta: Difícil</button>
+            <button id="reset" style="display: none;">Reiniciar Jogo</button>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const cells = document.querySelectorAll('[data-cell]');
+        const status = document.getElementById('status');
+        const resetButton = document.getElementById('reset');
+        const pvpButton = document.getElementById('pvp');
+        const easyButton = document.getElementById('easy');
+        const mediumButton = document.getElementById('medium');
+        const hardButton = document.getElementById('hard');
+        let currentPlayer = 'X';
+        let gameActive = false;
+        let isComputerOpponent = false;
+        let difficulty = '';
+
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        function startGame(vsComputer, difficultyLevel) {
+            isComputerOpponent = vsComputer;
+            difficulty = difficultyLevel;
+            gameActive = true;
+            currentPlayer = 'X';
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o', 'winner-cell');
+            });
+            status.textContent = 'Vez da Idosa X';
+            resetButton.style.display = 'block';
+            pvpButton.style.display = 'none';
+            easyButton.style.display = 'none';
+            mediumButton.style.display = 'none';
+            hardButton.style.display = 'none';
+        }
+
+        function handleCellClick(e) {
+            const cell = e.target;
+            const cellIndex = Array.from(cells).indexOf(cell);
+
+            if (cell.textContent || !gameActive) return;
+
+            makeMove(cell, currentPlayer);
+
+            if (gameActive && isComputerOpponent && currentPlayer === 'O') {
+                setTimeout(computerMove, 500);
+            }
+        }
+
+        function makeMove(cell, player) {
+            cell.textContent = player;
+            cell.classList.add(player.toLowerCase());
+            if (checkWin()) {
+                gameActive = false;
+                status.textContent = `Idosa ${player} venceu!`;
+                highlightWinningCells();
+            } else if (checkDraw()) {
+                gameActive = false;
+                status.textContent = 'Empate! As idosas são sábias!';
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                status.textContent = `Vez da Idosa ${currentPlayer}`;
+            }
+        }
+
+        function highlightWinningCells() {
+            winningCombinations.forEach(combination => {
+                if (
+                    cells[combination[0]].textContent &&
+                    cells[combination[0]].textContent === cells[combination[1]].textContent &&
+                    cells[combination[0]].textContent === cells[combination[2]].textContent
+                ) {
+                    combination.forEach(index => {
+                        cells[index].classList.add('winner-cell');
+                    });
+                }
+            });
+        }
+
+        function computerMove() {
+            let move;
+            switch (difficulty) {
+                case 'easy':
+                    move = getEasyMove();
+                    break;
+                case 'medium':
+                    move = getMediumMove();
+                    break;
+                case 'hard':
+                    move = getHardMove();
+                    break;
+                default:
+                    move = getRandomMove();
+            }
+            makeMove(cells[move], 'O');
+        }
+
+        function getEasyMove() {
+            if (Math.random() < 0.7) {
+                return getRandomMove();
+            } else {
+                const winningMove = findWinningMove('O');
+                if (winningMove !== -1) return winningMove;
+                const blockingMove = findWinningMove('X');
+                if (blockingMove !== -1) return blockingMove;
+                return getRandomMove();
+            }
+        }
+
+        function getMediumMove() {
+            const rand = Math.random();
+            if (rand < 0.5) {
+                return getBestMove();
+            } else if (rand < 0.8) {
+                return getSecondBestMove();
+            } else {
+                return getRandomMove();
+            }
+        }
+
+        function getHardMove() {
+            if (Math.random() < 0.8) {
+                return getBestMove();
+            } else {
+                return getSecondBestMove();
+            }
+        }
+
+        function getRandomMove() {
+            const emptyCells = Array.from(cells).filter(cell => !cell.textContent);
+            return Array.from(cells).indexOf(emptyCells[Math.floor(Math.random() * emptyCells.length)]);
+        }
+
+        function findWinningMove(player) {
+            for (let i = 0; i < 9; i++) {
+                if (cells[i].textContent === '') {
+                    cells[i].textContent = player;
+                    if (checkWin()) {
+                        cells[i].textContent = '';
+                        return i;
+                    }
+                    cells[i].textContent = '';
+                }
+            }
+            return -1;
+        }
+
+        function getBestMove() {
+            let bestScore = -Infinity;
+            let bestMove;
+            for (let i = 0; i < 9; i++) {
+                if (cells[i].textContent === '') {
+                    cells[i].textContent = 'O';
+                    let score = minimax(cells, 0, false);
+                    cells[i].textContent = '';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
+                }
+            }
+            return bestMove;
+        }
+
+        function getSecondBestMove() {
+            let moves = [];
+            for (let i = 0; i < 9; i++) {
+                if (cells[i].textContent === '') {
+                    cells[i].textContent = 'O';
+                    let score = minimax(cells, 0, false);
+                    cells[i].textContent = '';
+                    moves.push({index: i, score: score});
+                }
+            }
+            moves.sort((a, b) => b.score - a.score);
+            return moves.length > 1 ? moves[1].index : moves[0].index;
+        }
+
+        function minimax(board, depth, isMaximizing) {
+            if (checkWin()) {
+                return isMaximizing ? -1 : 1;
+            } else if (checkDraw()) {
+                return 0;
+            }
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i].textContent === '') {
+                        board[i].textContent = 'O';
+                        let score = minimax(board, depth + 1, false);
+                        board[i].textContent = '';
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i].textContent === '') {
+                        board[i].textContent = 'X';
+                        let score = minimax(board, depth + 1, true);
+                        board[i].textContent = '';
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        function checkWin() {
+            return winningCombinations.some(combination => {
+                return combination.every(index => {
+                    return cells[index].textContent === currentPlayer;
+                });
+            });
+        }
+
+        function checkDraw() {
+            return Array.from(cells).every(cell => cell.textContent);
+        }
+
+        function resetGame() {
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o', 'winner-cell');
+            });
+            gameActive = false;
+            status.textContent = 'Escolha o modo de jogo';
+            resetButton.style.display = 'none';
+            pvpButton.style.display = 'block';
+            easyButton.style.display = 'block';
+            mediumButton.style.display = 'block';
+            hardButton.style.display = 'block';
+        }
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', resetGame);
+        pvpButton.addEventListener('click', () => startGame(false, ''));
+        easyButton.addEventListener('click', () => startGame(true, 'easy'));
+        mediumButton.addEventListener('click', () => startGame(true, 'medium'));
+        hardButton.addEventListener('click', () => startGame(true, 'hard'));
+    </script>
+</body>
+</html>
