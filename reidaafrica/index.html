@@ -5,29 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rei da África</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Cinzel:wght@700&display=swap');
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f0e68c;
             color: #4a4a4a;
+            background-size: cover;
+            background-attachment: fixed;
         }
         .container {
-            max-width: 800px;
-            margin: 0 auto;
+            max-width: 1000px;
+            margin: 20px auto;
             padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
         }
         h1 {
+            font-family: 'Cinzel', serif;
             text-align: center;
             color: #8b4513;
-            font-size: 2.5em;
+            font-size: 3em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
         }
         .game-board {
-            background-color: #deb887;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
         }
         .status-container {
             display: flex;
@@ -44,6 +52,9 @@
             text-align: center;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
         }
+        .status-item:hover {
+            transform: translateY(-5px);
+        }
         .status-item h3 {
             margin: 0;
             font-size: 1em;
@@ -51,47 +62,64 @@
         }
         .status-item p {
             margin: 5px 0 0;
-            font-size: 1.2em;
+            font-size: 1.4em;
             font-weight: bold;
+            color: #4a4a4a;
         }
         .actions-container {
+            width: 60%;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .input-container {
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
         }
         button {
             background-color: #cd853f;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 12px;
             border-radius: 5px;
             cursor: pointer;
             font-size: 1em;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
         }
         button:hover {
             background-color: #d2691e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         button:disabled {
             background-color: #d3d3d3;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
             box-sizing: border-box;
-            border: 1px solid #cd853f;
+            border: 2px solid #cd853f;
             border-radius: 5px;
+            font-size: 1em;
         }
         #mensagem {
             background-color: #f4a460;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
             margin-top: 20px;
             text-align: center;
             font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
         #telaVitoria {
             position: fixed;
@@ -110,7 +138,12 @@
             padding: 40px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+            animation: aparecer 0.5s ease-out;
+        }
+        @keyframes aparecer {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
         }
         .vitoria-conteudo h2 {
             color: #8b4513;
@@ -120,6 +153,20 @@
         .vitoria-conteudo p {
             font-size: 1.2em;
             margin-bottom: 30px;
+        }
+        .log-container {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #fff3e0;
+            border: 1px solid #deb887;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #f4a460;
         }
     </style>
 </head>
@@ -136,11 +183,15 @@
                 <button onclick="minerar()">Minerar</button>
                 <button onclick="cacar()">Caçar</button>
             </div>
-            <input type="number" id="quantidade" placeholder="Quantidade" value="1">
-            <button id="proximoDia" onclick="proximoDia()" disabled>Próximo Dia</button>
-            <button onclick="novoJogo()">Novo Jogo</button>
-            <div id="mensagem"></div>
+            <div class="input-container">
+                <input type="number" id="quantidade" placeholder="Quantidade" value="1" min="1">
+                <button id="proximoDia" onclick="proximoDia()" disabled>Próximo Dia</button>
+                <br>
+                <button onclick="novoJogo()">Novo Jogo</button>
+            </div>
         </div>
+        <div id="mensagem"></div>
+        <div class="log-container" id="log"></div>
     </div>
 
     <div id="telaVitoria" style="display: none;">
@@ -204,6 +255,7 @@ function novoJogo() {
     document.getElementById('quantidade').value = '1';
     exibirMensagem("Novo jogo iniciado!");
     document.getElementById('telaVitoria').style.display = 'none';
+    document.getElementById('log').innerHTML = '';
 }
 
 function atualizarStatus() {
@@ -268,6 +320,7 @@ function proximoDia() {
         gameState.acaoRealizada = false;
         document.getElementById('proximoDia').disabled = true;
         exibirMensagem(mensagem);
+        adicionarLog(mensagem);
         salvarJogo();
     }
 }
@@ -278,6 +331,14 @@ function exibirMensagem(msg) {
     mensagemElement.style.display = 'block';
 }
 
+function adicionarLog(msg) {
+    const logContainer = document.getElementById('log');
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    logEntry.textContent = `Dia ${gameState.dia}: ${msg}`;
+    logContainer.insertBefore(logEntry, logContainer.firstChild);
+}
+
 function comprarHomens() {
     const quantidade = parseInt(document.getElementById('quantidade').value);
     const custo = quantidade * 3000;
@@ -285,6 +346,7 @@ function comprarHomens() {
         gameState.homens += quantidade;
         gameState.pyxelCoins -= custo;
         exibirMensagem(`Você comprou ${quantidade} homens por ${custo} PyxelCoins.`);
+        adicionarLog(`Comprou ${quantidade} homens por ${custo} PyxelCoins.`);
         habilitarProximoDia();
     } else {
         exibirMensagem("PyxelCoins insuficientes!");
@@ -299,6 +361,7 @@ function venderHomens() {
         gameState.homens -= quantidade;
         gameState.pyxelCoins += ganho;
         exibirMensagem(`Você vendeu ${quantidade} homens por ${ganho} PyxelCoins.`);
+        adicionarLog(`Vendeu ${quantidade} homens por ${ganho} PyxelCoins.`);
         habilitarProximoDia();
     } else {
         exibirMensagem("Homens insuficientes!");
@@ -306,111 +369,131 @@ function venderHomens() {
     atualizarStatus();
 }
 
-function comprarSoldados() {
-    const quantidade = parseInt(document.getElementById('quantidade').value);
-    const custo = quantidade * 12000;
-    if (custo <= gameState.pyxelCoins) {
-        gameState.soldados += quantidade;
-        gameState.pyxelCoins -= custo;
-        exibirMensagem(`Você comprou ${quantidade} soldados por ${custo} PyxelCoins.`);
-        habilitarProximoDia();
-    } else {
-        exibirMensagem("PyxelCoins insuficientes!");
-    }
-    atualizarStatus();
-}
+        function comprarSoldados() {
+            const quantidade = parseInt(document.getElementById('quantidade').value);
+            const custo = quantidade * 12000;
+            if (custo <= gameState.pyxelCoins) {
+                gameState.soldados += quantidade;
+                gameState.pyxelCoins -= custo;
+                exibirMensagem(`Você comprou ${quantidade} soldados por ${custo} PyxelCoins.`);
+                adicionarLog(`Comprou ${quantidade} soldados por ${custo} PyxelCoins.`);
+                habilitarProximoDia();
+            } else {
+                exibirMensagem("PyxelCoins insuficientes!");
+            }
+            atualizarStatus();
+        }
 
-function guerrear() {
-    gameState.guerraAtiva = true;
-    exibirMensagem("A guerra começará no próximo dia.");
-    habilitarProximoDia();
-}
+        function guerrear() {
+            gameState.guerraAtiva = true;
+            exibirMensagem("A guerra começará no próximo dia.");
+            adicionarLog("Preparativos para a guerra iniciados.");
+            habilitarProximoDia();
+        }
 
-function processarGuerra() {
-    const chanceSucesso = Math.random();
-    if (chanceSucesso < 0.6) {
-        const ganhoHomens = Math.floor(Math.random() * 1000) + 100;
-        const ganhoSoldados = Math.floor(Math.random() * 100) + 10;
-        const ganhoPyxelCoins = Math.floor(Math.random() * 50000) + 5000;
-        const ganhoEscravos = Math.floor(Math.random() * 500) + 50;
-        gameState.homens += ganhoHomens;
-        gameState.soldados += ganhoSoldados;
-        gameState.pyxelCoins += ganhoPyxelCoins;
-        gameState.escravos += ganhoEscravos;
-        gameState.territorios++;
-        return `Vitória! Você ganhou ${ganhoHomens} homens, ${ganhoSoldados} soldados, ${ganhoPyxelCoins} PyxelCoins, ${ganhoEscravos} escravos e 1 território.`;
-    } else {
-        const perdaHomens = Math.floor(Math.random() * 500) + 50;
-        const perdaSoldados = Math.floor(Math.random() * 50) + 5;
-        const perdaPyxelCoins = Math.floor(Math.random() * 25000) + 2500;
-        gameState.homens = Math.max(0, gameState.homens - perdaHomens);
-        gameState.soldados = Math.max(0, gameState.soldados - perdaSoldados);
-        gameState.pyxelCoins = Math.max(0, gameState.pyxelCoins - perdaPyxelCoins);
-        gameState.territorios = Math.max(0, gameState.territorios - 1);
-        return `Derrota! Você perdeu ${perdaHomens} homens, ${perdaSoldados} soldados, ${perdaPyxelCoins} PyxelCoins e 1 território.`;
-    }
-}
+        function processarGuerra() {
+            const chanceSucesso = Math.random();
+            const soldadosEnvolvidos = Math.floor(gameState.soldados * 0.1);
+            let mensagem = "Resultado da guerra:\n";
 
-function minerar() {
-    gameState.mineracaoAtiva = true;
-    exibirMensagem("A mineração começará no próximo dia.");
-    habilitarProximoDia();
-}
+            if (chanceSucesso < 0.6) {
+                const territoriosGanhos = Math.floor(Math.random() * 3) + 1;
+                const escravosCapturados = Math.floor(Math.random() * 1000) + 500;
+                const pyxelCoinsGanhos = territoriosGanhos * 50000 + escravosCapturados * 100;
 
-function processarMineracao() {
-    const chanceOuro = Math.random();
-    const chanceCobre = Math.random();
-    let mensagem = "Resultado da mineração:\n";
-    if (chanceOuro < 0.3) {
-        const ouroMinerado = Math.floor(Math.random() * 5) + 1;
-        gameState.ouro += ouroMinerado;
-        gameState.pyxelCoins += ouroMinerado * 5000;
-        mensagem += `Minerou ${ouroMinerado} de ouro! (+${ouroMinerado * 5000} PyxelCoins)\n`;
-    }
-    if (chanceCobre < 0.6) {
-        const cobreMinerado = Math.floor(Math.random() * 10) + 1;
-        gameState.cobre += cobreMinerado;
-        gameState.pyxelCoins += cobreMinerado * 1000;
-        mensagem += `Minerou ${cobreMinerado} de cobre! (+${cobreMinerado * 1000} PyxelCoins)\n`;
-    }
-    if (mensagem === "Resultado da mineração:\n") {
-        mensagem += "Nenhum minério encontrado desta vez.";
-    }
-    return mensagem;
-}
+                gameState.territorios += territoriosGanhos;
+                gameState.escravos += escravosCapturados;
+                gameState.pyxelCoins += pyxelCoinsGanhos;
 
-function cacar() {
-    gameState.cacaAtiva = true;
-    exibirMensagem("A caçada começará no próximo dia.");
-    habilitarProximoDia();
-}
+                mensagem += `Vitória! Conquistou ${territoriosGanhos} territórios, capturou ${escravosCapturados} escravos e ganhou ${pyxelCoinsGanhos} PyxelCoins.`;
+                adicionarLog(`Guerra vitoriosa: +${territoriosGanhos} territórios, +${escravosCapturados} escravos, +${pyxelCoinsGanhos} PyxelCoins.`);
+            } else {
+                const soldadosPerdidos = Math.floor(soldadosEnvolvidos * 0.4);
+                gameState.soldados -= soldadosPerdidos;
 
-function processarCaca() {
-    const chanceTerrestre = Math.random();
-    const chanceMaritima = Math.random();
-    let mensagem = "Resultado da caçada:\n";
-    if (chanceTerrestre < 0.4) {
-        const presasTerrestres = Math.floor(Math.random() * 5) + 1;
-        gameState.presasTerrestres += presasTerrestres;
-        gameState.pyxelCoins += presasTerrestres * 2000;
-        mensagem += `Capturou ${presasTerrestres} presas terrestres! (+${presasTerrestres * 2000} PyxelCoins)\n`;
-    }
-    if (chanceMaritima < 0.2) {
-        const presasMaritimas = Math.floor(Math.random() * 3) + 1;
-        gameState.presasMaritimas += presasMaritimas;
-        gameState.pyxelCoins += presasMaritimas * 4000;
-        mensagem += `Capturou ${presasMaritimas} presas marítimas! (+${presasMaritimas * 4000} PyxelCoins)\n`;
-    }
-    if (mensagem === "Resultado da caçada:\n") {
-        mensagem += "Nenhuma presa capturada desta vez.";
-    }
-    return mensagem;
-}
+                mensagem += `Derrota! Perdeu ${soldadosPerdidos} soldados na batalha.`;
+                adicionarLog(`Guerra perdida: -${soldadosPerdidos} soldados.`);
+            }
 
-window.onload = function() {
-    carregarJogo();
-    atualizarStatus();
-};
-</script>
-</body>
-</html>
+            return mensagem;
+        }
+
+        function minerar() {
+            gameState.mineracaoAtiva = true;
+            exibirMensagem("A mineração começará no próximo dia.");
+            adicionarLog("Operações de mineração iniciadas.");
+            habilitarProximoDia();
+        }
+
+        function processarMineracao() {
+            const chanceOuro = Math.random();
+            const chanceCobre = Math.random();
+            let mensagem = "Resultado da mineração:\n";
+
+            if (chanceOuro < 0.3) {
+                const ouroMinerado = Math.floor(Math.random() * 5) + 1;
+                gameState.ouro += ouroMinerado;
+                gameState.pyxelCoins += ouroMinerado * 5000;
+                mensagem += `Minerou ${ouroMinerado} de ouro! (+${ouroMinerado * 5000} PyxelCoins)\n`;
+                adicionarLog(`Mineração: +${ouroMinerado} ouro, +${ouroMinerado * 5000} PyxelCoins`);
+            }
+
+            if (chanceCobre < 0.6) {
+                const cobreMinerado = Math.floor(Math.random() * 10) + 1;
+                gameState.cobre += cobreMinerado;
+                gameState.pyxelCoins += cobreMinerado * 1000;
+                mensagem += `Minerou ${cobreMinerado} de cobre! (+${cobreMinerado * 1000} PyxelCoins)\n`;
+                adicionarLog(`Mineração: +${cobreMinerado} cobre, +${cobreMinerado * 1000} PyxelCoins`);
+            }
+
+            if (mensagem === "Resultado da mineração:\n") {
+                mensagem += "Nenhum minério encontrado desta vez.";
+                adicionarLog("Mineração: Nenhum resultado significativo.");
+            }
+
+            return mensagem;
+        }
+
+        function cacar() {
+            gameState.cacaAtiva = true;
+            exibirMensagem("A caçada começará no próximo dia.");
+            adicionarLog("Expedição de caça iniciada.");
+            habilitarProximoDia();
+        }
+
+        function processarCaca() {
+            const chanceTerrestre = Math.random();
+            const chanceMaritima = Math.random();
+            let mensagem = "Resultado da caçada:\n";
+
+            if (chanceTerrestre < 0.4) {
+                const presasTerrestres = Math.floor(Math.random() * 5) + 1;
+                gameState.presasTerrestres += presasTerrestres;
+                gameState.pyxelCoins += presasTerrestres * 2000;
+                mensagem += `Capturou ${presasTerrestres} presas terrestres! (+${presasTerrestres * 2000} PyxelCoins)\n`;
+                adicionarLog(`Caçada: +${presasTerrestres} presas terrestres, +${presasTerrestres * 2000} PyxelCoins`);
+            }
+
+            if (chanceMaritima < 0.2) {
+                const presasMaritimas = Math.floor(Math.random() * 3) + 1;
+                gameState.presasMaritimas += presasMaritimas;
+                gameState.pyxelCoins += presasMaritimas * 4000;
+                mensagem += `Capturou ${presasMaritimas} presas marítimas! (+${presasMaritimas * 4000} PyxelCoins)\n`;
+                adicionarLog(`Caçada: +${presasMaritimas} presas marítimas, +${presasMaritimas * 4000} PyxelCoins`);
+            }
+
+            if (mensagem === "Resultado da caçada:\n") {
+                mensagem += "Nenhuma presa capturada desta vez.";
+                adicionarLog("Caçada: Nenhum resultado significativo.");
+            }
+
+            return mensagem;
+        }
+
+        window.onload = function() {
+            carregarJogo();
+            atualizarStatus();
+        };
+        </script>
+        </body>
+        </html>
