@@ -25,7 +25,7 @@
             display: flex;
             gap: 20px;
         }
-        #game-board {
+        #game-board, #next-piece-canvas {
             border: 4px solid #34495e;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.3);
@@ -88,6 +88,10 @@
                 <div id="lines">Linhas: 0</div>
                 <div id="speed">Velocidade: 1</div>
             </div>
+            <div>
+                <p>Próxima peça:</p>
+                <canvas id="next-piece-canvas" width="120" height="120"></canvas>
+            </div>
             <div id="controls">
                 <p>← → : Mover</p>
                 <p>↑ : Rotacionar</p>
@@ -105,6 +109,8 @@
     <script>
         const canvas = document.getElementById('game-board');
         const ctx = canvas.getContext('2d');
+        const nextPieceCanvas = document.getElementById('next-piece-canvas');
+        const nextPieceCtx = nextPieceCanvas.getContext('2d');
         const scoreElement = document.getElementById('score');
         const levelElement = document.getElementById('level');
         const linesElement = document.getElementById('lines');
@@ -120,6 +126,7 @@
 
         let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
         let currentPiece = null;
+        let nextPiece = null;
         let score = 0;
         let level = 1;
         let lines = 0;
@@ -136,15 +143,15 @@
                 this.col = Math.floor(COLS / 2) - Math.ceil(shape[0].length / 2);
             }
 
-            draw(opacity = 1) {
+            draw(ctx, offsetX = 0, offsetY = 0, opacity = 1) {
                 ctx.fillStyle = this.color;
                 ctx.globalAlpha = opacity;
                 this.shape.forEach((row, r) => {
                     row.forEach((value, c) => {
                         if (value) {
-                            ctx.fillRect((this.col + c) * BLOCK_SIZE, (this.row + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                            ctx.fillRect((this.col + c) * BLOCK_SIZE + offsetX, (this.row + r) * BLOCK_SIZE + offsetY, BLOCK_SIZE, BLOCK_SIZE);
                             ctx.strokeStyle = '#2c3e50';
-                            ctx.strokeRect((this.col + c) * BLOCK_SIZE, (this.row + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                            ctx.strokeRect((this.col + c) * BLOCK_SIZE + offsetX, (this.row + r) * BLOCK_SIZE + offsetY, BLOCK_SIZE, BLOCK_SIZE);
                         }
                     });
                 });
@@ -228,6 +235,16 @@
             });
         }
 
+        function drawNextPiece() {
+            nextPieceCtx.fillStyle = '#34495e';
+            nextPieceCtx.fillRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
+            
+            const offsetX = (nextPieceCanvas.width - nextPiece.shape[0].length * BLOCK_SIZE) / 2;
+            const offsetY = (nextPieceCanvas.height - nextPiece.shape.length * BLOCK_SIZE) / 2;
+            
+            nextPiece.draw(nextPieceCtx, offsetX - nextPiece.col * BLOCK_SIZE, offsetY - nextPiece.row * BLOCK_SIZE);
+        }
+
         function mergePiece() {
             currentPiece.shape.forEach((row, r) => {
                 row.forEach((value, c) => {
@@ -278,7 +295,9 @@
             dropInterval = 1000;
             updateScore();
             gameOverElement.style.display = 'none';
-            currentPiece = null;
+            currentPiece = createPiece();
+            nextPiece = createPiece();
+            drawNextPiece();
         }
 
         function update(time = 0) {
@@ -288,7 +307,9 @@
             dropCounter += deltaTime;
             if (dropCounter > dropInterval) {
                 if (!currentPiece) {
-                    currentPiece = createPiece();
+                    currentPiece = nextPiece;
+                    nextPiece = createPiece();
+                    drawNextPiece();
                     if (currentPiece.collision()) {
                         gameOver();
                         return;
@@ -310,8 +331,8 @@
                 const ghostPiece = new Piece(currentPiece.shape, currentPiece.color);
                 ghostPiece.row = dropPosition;
                 ghostPiece.col = currentPiece.col;
-                ghostPiece.draw(0.3);
-                currentPiece.draw();
+                ghostPiece.draw(ctx, 0, 0, 0.3);
+                currentPiece.draw(ctx);
             }
 
             requestAnimationFrame(update);
@@ -351,6 +372,7 @@
 
         restartBtn.addEventListener('click', restart);
 
+        restart();
         update();
     </script>
 </body>
