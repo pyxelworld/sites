@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Comportamental DISC</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .slide-container {
+            width: 80%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .nav-buttons {
+            margin-top: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #slide-number {
+            font-style: italic;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div id="slide-content"></div>
+        <div class="nav-buttons">
+            <button onclick="changeSlide(-1)">Anterior</button>
+            <button onclick="changeSlide(1)">Próximo</button>
+        </div>
+        <div id="slide-number"></div>
+    </div>
+
+    <script>
+        const slides = [
+            {
+                title: "Teste Comportamental DISC",
+                content: "Compreendendo Perfis e Estilos de Comunicação"
+            },
+            {
+                title: "O que é DISC?",
+                content: "DISC significa: Dominância, Influência, Estabilidade, Conformidade.<br>Criado por William Moulton Marston em 1928."
+            },
+            {
+                title: "Objetivo do DISC",
+                content: "• Identificar estilos comportamentais<br>• Melhorar comunicação e relacionamentos interpessoais<br>• Aumentar a eficácia no trabalho e na vida pessoal"
+            },
+            {
+                title: "Os 4 Perfis DISC",
+                content: "• D (Dominância): Direto, Determinado, Decidido<br>• I (Influência): Inspirador, Interativo, Entusiasmado<br>• S (Estabilidade): Estável, Solidário, Sereno<br>• C (Conformidade): Cauteloso, Calculista, Competente"
+            },
+            {
+                title: "Perfil D - Dominância",
+                content: "Características: Assertivo, Orientado a resultados<br>Pontos fortes: Liderança, Tomada de decisão rápida<br>Áreas de melhoria: Paciência, Empatia<br>Comunicação: Seja direto e focado em resultados"
+            },
+            {
+                title: "Perfil I - Influência",
+                content: "Características: Extrovertido, Otimista<br>Pontos fortes: Networking, Motivação de equipes<br>Áreas de melhoria: Organização, Foco<br>Comunicação: Use entusiasmo e seja social"
+            },
+            {
+                title: "Perfil S - Estabilidade",
+                content: "Características: Paciente, Cooperativo<br>Pontos fortes: Trabalho em equipe, Confiabilidade<br>Áreas de melhoria: Adaptabilidade, Assertividade<br>Comunicação: Seja gentil e forneça segurança"
+            },
+            {
+                title: "Perfil C - Conformidade",
+                content: "Características: Analítico, Preciso<br>Pontos fortes: Atenção aos detalhes, Qualidade<br>Áreas de melhoria: Flexibilidade, Expressão emocional<br>Comunicação: Forneça dados e seja específico"
+            },
+            {
+                title: "Combinações de Perfis",
+                content: "As pessoas geralmente têm uma mistura de perfis.<br>Exemplos: DI (líder carismático), SC (analista de suporte)"
+            },
+            {
+                title: "Aplicações Práticas do DISC",
+                content: "• No ambiente de trabalho<br>• Na formação de equipes<br>• No desenvolvimento pessoal"
+            },
+            {
+                title: "Como o Teste é Realizado",
+                content: "1. Questionário de autoavaliação<br>2. Análise dos resultados<br>3. Feedback e interpretação"
+            },
+            {
+                title: "Limitações e Considerações",
+                content: "• Não é um teste de personalidade completo<br>• Resultados podem variar com o tempo e contexto<br>• Deve ser usado como ferramenta de desenvolvimento, não de julgamento"
+            },
+            {
+                title: "Conclusão",
+                content: "O DISC é uma ferramenta valiosa para compreender comportamentos e melhorar comunicações. Incentivamos você a aprender mais sobre seu próprio perfil e dos outros."
+            },
+            {
+                title: "Perguntas e Discussão",
+                content: "Agora é o momento para suas dúvidas e comentários!"
+            }
+        ];
+
+        let currentSlide = 0;
+
+        function updateSlide() {
+            const slideContent = document.getElementById('slide-content');
+            const slideNumber = document.getElementById('slide-number');
+            const slide = slides[currentSlide];
+
+            slideContent.innerHTML = `
+                <h1>${slide.title}</h1>
+                <p>${slide.content}</p>
+            `;
+            slideNumber.textContent = `Slide ${currentSlide + 1} de ${slides.length}`;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide < 0) currentSlide = slides.length - 1;
+            if (currentSlide >= slides.length) currentSlide = 0;
+            updateSlide();
+        }
+
+        updateSlide();
+    </script>
+</body>
+</html>
