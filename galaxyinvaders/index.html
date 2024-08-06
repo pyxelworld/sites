@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxy Invader Deluxe</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23000"/><circle cx="50" cy="50" r="0.5" fill="%23fff"/><circle cx="25" cy="25" r="0.3" fill="%23fff"/><circle cx="75" cy="75" r="0.2" fill="%23fff"/><circle cx="10" cy="90" r="0.4" fill="%23fff"/><circle cx="90" cy="10" r="0.3" fill="%23fff"/></svg>');
+            background-repeat: repeat;
+            animation: scrollBackground 60s linear infinite;
+        }
+        @keyframes scrollBackground {
+            from { background-position: 0 0; }
+            to { background-position: 0 400px; }
+        }
+        #player, .enemy, .bullet {
+            position: absolute;
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: transform 0.1s ease-out;
+        }
+        #player {
+            width: 60px;
+            height: 60px;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 10 L90 90 L50 70 L10 90 Z" fill="%230ff"/><circle cx="50" cy="45" r="10" fill="%23fff"/><path d="M30 70 Q50 60 70 70" stroke="%23fff" stroke-width="2" fill="none"/></svg>');
+            filter: drop-shadow(0 0 10px #0ff);
+        }
+        .enemy {
+            width: 50px;
+            height: 50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M20 50 L50 20 L80 50 L65 80 L35 80 Z" fill="%23f0f"/><circle cx="50" cy="45" r="10" fill="%23000"/><path d="M35 60 Q50 70 65 60" stroke="%23000" stroke-width="2" fill="none"/></svg>');
+            filter: drop-shadow(0 0 5px #f0f);
+        }
+        .bullet {
+            width: 6px;
+            height: 20px;
+            background-color: #0ff;
+            border-radius: 3px;
+            box-shadow: 0 0 10px #0ff;
+        }
+        .enemy-bullet {
+            background-color: #f0f;
+            box-shadow: 0 0 10px #f0f;
+        }
+        #score, #level {
+            position: absolute;
+            top: 20px;
+            font-size: 24px;
+            text-shadow: 0 0 10px #0ff;
+            z-index: 10;
+        }
+        #score { left: 20px; }
+        #level { right: 20px; }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            display: none;
+            text-shadow: 0 0 20px #f0f;
+            z-index: 20;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 30;
+        }
+        #startButton {
+            font-size: 32px;
+            padding: 15px 30px;
+            background-color: #0ff;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px #0ff;
+        }
+        #startButton:hover {
+            background-color: #f0f;
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #f0f;
+        }
+        #instructions {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 24px;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+        #powerUp {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,10 61,35 90,40 70,60 75,90 50,75 25,90 30,60 10,40 39,35" fill="%23ff0"/></svg>');
+            filter: drop-shadow(0 0 5px #ff0);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="player"></div>
+        <div id="score">Score: 0</div>
+        <div id="level">Level: 1</div>
+        <div id="gameOver">Game Over</div>
+        <div id="startScreen">
+            <h1 style="font-size: 64px; color: #0ff; text-shadow: 0 0 20px #0ff;">Galaxy Invader Deluxe</h1>
+            <button id="startButton">Iniciar Jogo</button>
+            <div id="instructions">
+                Use o mouse para mover a nave<br>
+                A nave atira automaticamente<br>
+                Desvie dos tiros inimigos e sobreviva!<br>
+                Colete power-ups para ficar mais forte!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const gameOverElement = document.getElementById('gameOver');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+
+        let score = 0;
+        let level = 1;
+        let enemies = [];
+        let bullets = [];
+        let powerUps = [];
+        let gameLoop;
+        let enemySpeed = 1;
+        let enemyFireRate = 0.005;
+        let playerFireRate = 300;
+        let lastPlayerShot = 0;
+        let playerPowerUp = 1;
+
+        function updatePlayerPosition(e) {
+            const rect = gameContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            player.style.left = `${Math.max(30, Math.min(rect.width - 30, x))}px`;
+            player.style.top = `${Math.max(30, Math.min(rect.height - 30, y))}px`;
+        }
+
+        function createEnemy() {
+            const enemy = document.createElement('div');
+            enemy.className = 'enemy';
+            enemy.style.left = `${Math.random() * (gameContainer.offsetWidth - 50)}px`;
+            enemy.style.top = '0px';
+            gameContainer.appendChild(enemy);
+            enemies.push(enemy);
+        }
+
+        function moveEnemies() {
+            enemies.forEach(enemy => {
+                const top = parseInt(enemy.style.top) || 0;
+                enemy.style.top = `${top + enemySpeed}px`;
+
+                if (Math.random() < enemyFireRate) {
+                    createEnemyBullet(enemy);
+                }
+
+                if (top > gameContainer.offsetHeight) {
+                    gameContainer.removeChild(enemy);
+                    enemies = enemies.filter(e => e !== enemy);
+                }
+            });
+        }
+
+        function createEnemyBullet(enemy) {
+            const bullet = document.createElement('div');
+            bullet.className = 'bullet enemy-bullet';
+            bullet.style.left = `${parseInt(enemy.style.left) + 25}px`;
+            bullet.style.top = `${parseInt(enemy.style.top) + 50}px`;
+            gameContainer.appendChild(bullet);
+            bullets.push(bullet);
+        }
+
+        function shoot() {
+            const currentTime = Date.now();
+            if (currentTime - lastPlayerShot > playerFireRate) {
+                for (let i = 0; i < playerPowerUp; i++) {
+                    const bullet = document.createElement('div');
+                    bullet.className = 'bullet';
+                    bullet.style.left = `${parseInt(player.style.left) + 27 + (i - Math.floor(playerPowerUp/2)) * 10}px`;
+                    bullet.style.top = `${parseInt(player.style.top) - 20}px`;
+                    gameContainer.appendChild(bullet);
+                    bullets.push(bullet);
+                }
+                lastPlayerShot = currentTime;
+            }
+        }
+
+        function moveBullets() {
+            bullets.forEach(bullet => {
+                if (bullet.classList.contains('enemy-bullet')) {
+                    const top = parseInt(bullet.style.top) || 0;
+                    bullet.style.top = `${top + 5}px`;
+                    checkPlayerCollision(bullet);
+                    if (top > gameContainer.offsetHeight) {
+                        gameContainer.removeChild(bullet);
+                        bullets = bullets.filter(b => b !== bullet);
+                    }
+                } else {
+                    const top = parseInt(bullet.style.top) || 0;
+                    bullet.style.top = `${top - 10}px`;
+                    checkCollision(bullet);
+                    if (top < 0) {
+                        gameContainer.removeChild(bullet);
+                        bullets = bullets.filter(b => b !== bullet);
+                    }
+                }
+            });
+        }
+
+        function checkCollision(bullet) {
+            enemies.forEach(enemy => {
+                if (isColliding(bullet, enemy)) {
+                    gameContainer.removeChild(enemy);
+                    gameContainer.removeChild(bullet);
+                    enemies = enemies.filter(e => e !== enemy);
+                    bullets = bullets.filter(b => b !== bullet);
+                    score += 10;
+                    scoreElement.textContent = `Score: ${score}`;
+                    if (score % 100 === 0) {
+                        level++;
+                        levelElement.textContent = `Level: ${level}`;
+                        enemySpeed += 0.2;
+                        enemyFireRate += 0.001;
+                    }
+                    if (Math.random() < 0.1) {
+                        createPowerUp(enemy);
+                    }
+                }
+            });
+        }
+
+        function createPowerUp(enemy) {
+            const powerUp = document.createElement('div');
+            powerUp.id = 'powerUp';
+            powerUp.style.left = enemy.style.left;
+            powerUp.style.top = enemy.style.top;
+            gameContainer.appendChild(powerUp);
+            powerUps.push(powerUp);
+        }
+
+        function movePowerUps() {
+            powerUps.forEach(powerUp => {
+                const top = parseInt(powerUp.style.top) || 0;
+                powerUp.style.top = `${top + 2}px`;
+                if (isColliding(powerUp, player)) {
+                    gameContainer.removeChild(powerUp);
+                    powerUps = powerUps.filter(p => p !== powerUp);
+                    playerPowerUp = Math.min(playerPowerUp + 1, 5);
+                } else if (top > gameContainer.offsetHeight) {
+                    gameContainer.removeChild(powerUp);
+                    powerUps = powerUps.filter(p => p !== powerUp);
+                }
+            });
+        }
+
+        function checkPlayerCollision(bullet) {
+            if (isColliding(bullet, player)) {
+                gameOver();
+            }
+        }
+
+        function isColliding(a, b) {
+            const aRect = a.getBoundingClientRect();
+            const bRect = b.getBoundingClientRect();
+            return !(
+                aRect.top + aRect.height < bRect.top ||
+                aRect.top > bRect.top + bRect.height ||
+                aRect.left + aRect.width < bRect.left ||
+                aRect.left > bRect.left + bRect.width
+            );
+        }
+
+        function gameOver() {
+            clearInterval(gameLoop);
+            gameOverElement.style.display = 'block';
+            setTimeout(() => {
+                startScreen.style.display = 'flex';
+                gameOverElement.style.display = 'none';
+            }, 2000);
+        }
+
+        function startGame() {
+            score = 0;
+            level = 1;
+            enemies = [];
+            bullets = [];
+            powerUps = [];
+            playerPowerUp = 1;
+            enemySpeed = 1;
+            enemyFireRate = 0.005;
+            player.style.left = '50%';
+            player.style.top = '90%';
+            scoreElement.textContent = 'Score: 0';
+            levelElement.textContent = 'Level: 1';
+            startScreen.style.display = 'none';
+
+            gameLoop = setInterval(() => {
+                if (Math.random() < 0.02) createEnemy();
+                moveEnemies();
+                shoot();
+                moveBullets();
+                movePowerUps();
+            }, 16);
+        }
+
+        gameContainer.addEventListener('mousemove', updatePlayerPosition);
+        startButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
