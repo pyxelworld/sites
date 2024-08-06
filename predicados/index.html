@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aventura dos Predicados</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Roboto:wght@400;700&display=swap');
+
+        body, html {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #74ebd5, #9face6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .game-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            color: #4a90e2;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .question {
+            font-size: 1em;
+            margin-bottom: 20px;
+            color: #333;
+            background-color: #e6f7ff;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .option-btn {
+            background-color: #66ccff;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .option-btn:hover {
+            background-color: #4a90e2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        .option-btn:active {
+            transform: translateY(1px);
+        }
+        #result {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1em;
+        }
+        #next-btn {
+            display: none;
+            margin-top: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            font-size: 0.9em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #next-btn:hover {
+            background-color: #45a049;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.9em;
+            color: #4a90e2;
+            background-color: rgba(255,255,255,0.8);
+            padding: 5px 10px;
+            border-radius: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        .progress {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.5s ease-in-out;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f0f;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Aventura dos Predicados</h1>
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="result"></div>
+        <button id="next-btn">Próxima Aventura!</button>
+        <div id="score">Pontuação: 0</div>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { question: "Na frase 'O gato dorme', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Em 'A casa é bonita', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na oração 'O atleta chegou cansado', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Qual é o tipo de predicado em 'As crianças brincam felizes'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Em 'O livro está na estante', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'Ela é médica', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Em 'Os pássaros cantam ao amanhecer', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Na frase 'A maçã está madura', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Qual é o tipo de predicado em 'Os alunos estudam para a prova'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Na frase 'A flor é linda', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Em 'Ele ficou triste', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'Estudamos juntos', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Qual é o tipo de predicado em 'O cachorro é fiel'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'Ela trabalha muito', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Em 'O sol brilha', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Na frase 'Os alunos estão felizes', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Qual é o tipo de predicado em 'As flores estão murchas'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Na frase 'Ele é professor', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Em 'A comida estava deliciosa', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'Os carros passaram rápido', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Qual é o tipo de predicado em 'A festa foi incrível'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'O artista pinta quadros', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Em 'O gato está dormindo', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Na frase 'A água está fria', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Qual é o tipo de predicado em 'A luz é forte'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'Ele viajou para o exterior', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Em 'O livro ficou na mesa', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'Os alunos farão a prova amanhã', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Qual é o tipo de predicado em 'A casa está vendida'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Na frase 'Ele se sente bem', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Em 'O céu está azul', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Na frase 'A comida fez sucesso', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Qual é o tipo de predicado em 'Os alunos estão estudando'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Na frase 'As crianças estão brincando', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Em 'O carro é novo', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'O filme foi emocionante', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Qual é o tipo de predicado em 'Ela canta muito bem'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Na frase 'O sol se pôs', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 },
+            { question: "Em 'Ele ficou feliz', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Na frase 'A prova foi difícil', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 1 },
+            { question: "Qual é o tipo de predicado em 'As flores estão coloridas'?", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 2 },
+            { question: "Na frase 'Ele gosta de viajar', o predicado é:", options: ["Verbal", "Nominal", "Verbo-nominal", "Não há predicado"], answer: 0 }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const resultEl = document.getElementById('result');
+        const nextBtn = document.getElementById('next-btn');
+        const scoreEl = document.getElementById('score');
+        const progressEl = document.getElementById('progress');
+
+        function loadQuestion() {
+            const question = questions[currentQuestion];
+            questionEl.textContent = question.question;
+            optionsEl.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-btn');
+                button.onclick = () => checkAnswer(index);
+                optionsEl.appendChild(button);
+            });
+            resultEl.textContent = '';
+            nextBtn.style.display = 'none';
+            updateProgress();
+        }
+
+        function checkAnswer(userAnswer) {
+            const question = questions[currentQuestion];
+            if (userAnswer === question.answer) {
+                resultEl.textContent = 'Correto! Você é um mestre dos predicados!';
+                resultEl.style.color = '#4CAF50';
+                score++;
+                createConfetti();
+            } else {
+                resultEl.textContent = 'Ops! A resposta certa é: ' + question.options[question.answer];
+                resultEl.style.color = '#f44336';
+            }
+            scoreEl.textContent = `Pontuação: ${score}`;
+            nextBtn.style.display = 'inline-block';
+            optionsEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
+        }
+
+        nextBtn.onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                finishGame();
+            }
+        };
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            progressEl.style.width = `${progress}%`;
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                document.body.appendChild(confetti);
+
+                confetti.animate([
+                    { transform: 'translate(0, 0)', opacity: 1 },
+                    { transform: `translate(${Math.random() * 100 - 50}px, 100vh)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * 3000 + 2000,
+                    easing: 'cubic-bezier(0,0,0.2,1)',
+                    fill: 'forwards'
+                });
+
+                setTimeout(() => confetti.remove(), 5000);
+            }
+        }
+
+        function finishGame() {
+            questionEl.textContent = 'Parabéns! Você completou a Aventura dos Predicados!';
+            optionsEl.innerHTML = '';
+            resultEl.textContent = `Sua pontuação final é: ${score} de ${questions.length}`;
+            resultEl.style.color = '#4a90e2';
+            nextBtn.style.display = 'none';
+            createConfetti();
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
