@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corrida 3D Realista</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        canvas { display: block; }
+        #ui {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #speedometer {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 2px solid white;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        #speed-needle {
+            width: 2px;
+            height: 50px;
+            background-color: red;
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transition: transform 0.1s;
+        }
+        #speed-text {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+        }
+        #minimap {
+            width: 150px;
+            height: 150px;
+            border: 2px solid white;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0,0,0,0.5);
+        }
+        #car-indicator {
+            width: 5px;
+            height: 5px;
+            background-color: red;
+            position: absolute;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="speedometer">
+            <div id="speed-needle"></div>
+            <div id="speed-text">0 km/h</div>
+        </div>
+        <div>Voltas: <span id="laps">0</span>/3</div>
+    </div>
+    <div id="minimap">
+        <div id="car-indicator"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Configuração básica
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Criando o carro
+        const carGeometry = new THREE.Group();
+        
+        // Corpo do carro
+        const bodyGeometry = new THREE.BoxGeometry(2, 0.5, 4);
+        const bodyMaterial = new THREE.MeshPhongMaterial({color: 0x3333ff});
+        const carBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        carBody.position.y = 0.5;
+        carGeometry.add(carBody);
+
+        // Rodas
+        const wheelGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 32);
+        const wheelMaterial = new THREE.MeshPhongMaterial({color: 0x333333});
+        const wheelPositions = [
+            { x: -1, y: 0, z: -1.5 },
+            { x: 1, y: 0, z: -1.5 },
+            { x: -1, y: 0, z: 1.5 },
+            { x: 1, y: 0, z: 1.5 }
+        ];
+        wheelPositions.forEach(pos => {
+            const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheel.position.set(pos.x, pos.y, pos.z);
+            wheel.rotation.z = Math.PI / 2;
+            carGeometry.add(wheel);
+        });
+
+        // Faróis
+        const headlightGeometry = new THREE.SphereGeometry(0.1, 32, 32);
+        const headlightMaterial = new THREE.MeshPhongMaterial({color: 0xffff00, emissive: 0xffff00});
+        const headlightPositions = [
+            { x: -0.8, y: 0.5, z: -2 },
+            { x: 0.8, y: 0.5, z: -2 }
+        ];
+        headlightPositions.forEach(pos => {
+            const headlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
+            headlight.position.set(pos.x, pos.y, pos.z);
+            carGeometry.add(headlight);
+        });
+
+        scene.add(carGeometry);
+
+        // Criando a pista
+        const trackRadius = 100;
+        const trackWidth = 15;
+        const trackShape = new THREE.Shape();
+        trackShape.absarc(0, 0, trackRadius, 0, Math.PI * 2, false);
+        const holePath = new THREE.Path();
+        holePath.absarc(0, 0, trackRadius - trackWidth, 0, Math.PI * 2, true);
+        trackShape.holes.push(holePath);
+
+        const trackGeometry = new THREE.ExtrudeGeometry(trackShape, {
+            steps: 1,
+            depth: 0.1,
+            bevelEnabled: false
+        });
+        const trackMaterial = new THREE.MeshPhongMaterial({color: 0x333333});
+        const track = new THREE.Mesh(trackGeometry, trackMaterial);
+        track.rotation.x = -Math.PI / 2;
+        scene.add(track);
+
+        // Adicionando grama
+        const grassGeometry = new THREE.PlaneGeometry(500, 500);
+        const grassTexture = new THREE.TextureLoader().load('https://threejsfundamentals.org/threejs/resources/images/grass.jpg');
+        grassTexture.wrapS = THREE.RepeatWrapping;
+        grassTexture.wrapT = THREE.RepeatWrapping;
+        grassTexture.repeat.set(100, 100);
+        const grassMaterial = new THREE.MeshPhongMaterial({map: grassTexture});
+        const grass = new THREE.Mesh(grassGeometry, grassMaterial);
+        grass.rotation.x = -Math.PI / 2;
+        grass.position.y = -0.1;
+        scene.add(grass);
+
+        // Adicionando árvores
+        const treeGeometry = new THREE.ConeGeometry(5, 20, 32);
+        const treeMaterial = new THREE.MeshPhongMaterial({color: 0x008800});
+        for (let i = 0; i < 50; i++) {
+            const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 100 + 150;
+            tree.position.set(
+                Math.cos(angle) * radius,
+                10,
+                Math.sin(angle) * radius
+            );
+            scene.add(tree);
+        }
+
+        // Adicionando luz
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 100, 0);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        // Configurando a câmera
+        camera.position.set(0, 10, 20);
+        camera.lookAt(carGeometry.position);
+
+        // Variáveis de controle
+        let speed = 0;
+        const maxSpeed = 1;
+        const acceleration = 0.01;
+        const deceleration = 0.005;
+        let steering = 0;
+        let laps = 0;
+        let lastCheckpoint = 0;
+
+        // Controladores de teclas
+        const keys = {};
+        document.addEventListener('keydown', (event) => {
+            keys[event.key.toLowerCase()] = true;
+        });
+        document.addEventListener('keyup', (event) => {
+            keys[event.key.toLowerCase()] = false;
+        });
+
+        // Função de animação
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Controles do carro
+            if (keys['arrowup'] || keys['w']) {
+                speed = Math.min(speed + acceleration, maxSpeed);
+            } else if (keys['arrowdown'] || keys['s']) {
+                speed = Math.max(speed - acceleration, -maxSpeed / 2);
+            } else {
+                speed *= 1 - deceleration;
+            }
+
+            if (keys['arrowleft'] || keys['a']) {
+                steering = Math.max(steering - 0.002, -0.03);
+            } else if (keys['arrowright'] || keys['d']) {
+                steering = Math.min(steering + 0.002, 0.03);
+            } else {
+                steering *= 0.95;
+            }
+
+            // Movendo o carro
+            carGeometry.translateZ(-speed);
+            carGeometry.rotation.y += steering;
+
+            // Verificando posição na pista
+            const carPosition = carGeometry.position;
+            const distanceFromCenter = Math.sqrt(carPosition.x * carPosition.x + carPosition.z * carPosition.z);
+            if (distanceFromCenter > trackRadius + trackWidth / 2 || distanceFromCenter < trackRadius - trackWidth / 2) {
+                speed *= 0.95; // Desacelera se sair da pista
+            }
+
+            // Verificando voltas
+            const angle = Math.atan2(carPosition.x, carPosition.z);
+            const checkpoint = Math.floor((angle + Math.PI) / (Math.PI / 2)) % 4;
+            if (checkpoint !== lastCheckpoint) {
+                if (checkpoint === 0 && lastCheckpoint === 3) {
+                    laps++;
+                    document.getElementById('laps').textContent = laps;
+                }
+                lastCheckpoint = checkpoint;
+            }
+
+            // Atualizando a posição da câmera
+            const cameraOffset = new THREE.Vector3(0, 5, 10);
+            cameraOffset.applyQuaternion(carGeometry.quaternion);
+            camera.position.copy(carGeometry.position).add(cameraOffset);
+            camera.lookAt(carGeometry.position);
+
+            // Atualizando o velocímetro
+            const speedKmh = Math.abs(Math.round(speed * 200));
+            document.getElementById('speed-text').textContent = speedKmh + ' km/h';
+            document.getElementById('speed-needle').style.transform = `rotate(${speedKmh * 1.8 - 90}deg)`;
+
+            // Atualizando o minimapa
+            const minimapScale = 0.7;
+            const carIndicator = document.getElementById('car-indicator');
+            carIndicator.style.left = `${75 + carPosition.x * minimapScale}px`;
+            carIndicator.style.top = `${75 - carPosition.z * minimapScale}px`;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Redimensionamento da janela
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
