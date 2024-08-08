@@ -3,190 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corrida 3D Realista</title>
+    <title>Super Corrida 3D Ultra Realista</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
         canvas { display: block; }
         #ui {
             position: absolute;
             bottom: 20px;
             left: 20px;
             color: white;
-            background-color: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 5px;
+            background-color: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
         }
         #speedometer {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            border: 2px solid white;
+            border: 4px solid #fff;
             position: relative;
-            margin-bottom: 10px;
+            margin-right: 20px;
+            background: rgba(0,0,0,0.5);
         }
         #speed-needle {
-            width: 2px;
-            height: 50px;
-            background-color: red;
+            width: 4px;
+            height: 60px;
+            background-color: #ff3333;
             position: absolute;
             bottom: 50%;
-            left: 50%;
+            left: calc(50% - 2px);
             transform-origin: bottom center;
             transition: transform 0.1s;
         }
         #speed-text {
             position: absolute;
-            bottom: 15px;
+            bottom: 25px;
             width: 100%;
             text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 18px;
         }
         #minimap {
-            width: 150px;
-            height: 150px;
-            border: 2px solid white;
+            width: 180px;
+            height: 180px;
+            border: 3px solid white;
             position: absolute;
             top: 20px;
             right: 20px;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0,0,0,0.7);
+            border-radius: 15px;
         }
         #car-indicator {
-            width: 5px;
-            height: 5px;
-            background-color: red;
+            width: 10px;
+            height: 10px;
+            background-color: #ff3333;
             position: absolute;
             border-radius: 50%;
+        }
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        #start-button {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #start-button:hover {
+            background-color: #45a049;
+        }
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 18px;
+            background-color: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 15px;
+        }
+        #gear {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 32px;
+            color: white;
+            background-color: rgba(0,0,0,0.7);
+            padding: 15px 25px;
+            border-radius: 15px;
+        }
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 96px;
+            color: white;
+            display: none;
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+        #restart-button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
+    <div id="start-screen">
+        <h1>Super Corrida 3D Ultra Realista</h1>
+        <p>Use as setas para controlar o carro. Cuidado com a grama!</p>
+        <button id="start-button">Iniciar Corrida</button>
+    </div>
+    <div id="countdown"></div>
+    <div id="game-over">
+        <h2>Corrida Finalizada!</h2>
+        <p>Tempo total: <span id="total-time"></span></p>
+        <p>Melhor volta: <span id="best-lap-final"></span></p>
+        <button id="restart-button">Reiniciar</button>
+    </div>
+    <div id="hud">
+        <div>Tempo: <span id="timer">00:00</span></div>
+        <div>Melhor Volta: <span id="best-lap">--:--</span></div>
+    </div>
     <div id="ui">
         <div id="speedometer">
             <div id="speed-needle"></div>
             <div id="speed-text">0 km/h</div>
         </div>
-        <div>Voltas: <span id="laps">0</span>/3</div>
+        <div id="info">
+            <div>Voltas: <span id="laps">0</span>/3</div>
+            <div>Posição: <span id="position">1º</span></div>
+        </div>
     </div>
     <div id="minimap">
         <div id="car-indicator"></div>
     </div>
+    <div id="gear">1</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        let gameStarted = false;
+        let startTime;
+        let lapTimes = [];
+        let totalTime = 0;
+        let countdownInterval;
+
+        document.getElementById('start-button').addEventListener('click', startCountdown);
+        document.getElementById('restart-button').addEventListener('click', restartGame);
+
+        function startCountdown() {
+            document.getElementById('start-screen').style.display = 'none';
+            const countdownElement = document.getElementById('countdown');
+            countdownElement.style.display = 'block';
+            let count = 3;
+            countdownElement.textContent = count;
+
+            countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownElement.textContent = count;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownElement.style.display = 'none';
+                    startGame();
+                }
+            }, 1000);
+        }
+
+        function startGame() {
+            gameStarted = true;
+            startTime = Date.now();
+        }
+
+        function restartGame() {
+            location.reload();
+        }
+
         // Configuração básica
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // Criando o carro
+        // Adicionando céu
+        const skyGeometry = new THREE.SphereGeometry(1000, 32, 32);
+        const skyMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
+        const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+        scene.add(sky);
+
+        // Adicionando sol
+        const sunGeometry = new THREE.SphereGeometry(50, 32, 32);
+        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        sun.position.set(500, 500, 0);
+        scene.add(sun);
+
+        // Criando o carro (modelo mais detalhado e sólido)
         const carGeometry = new THREE.Group();
         
         // Corpo do carro
-        const bodyGeometry = new THREE.BoxGeometry(2, 0.5, 4);
-        const bodyMaterial = new THREE.MeshPhongMaterial({color: 0x3333ff});
+        const bodyGeometry = new THREE.BoxGeometry(1.5, 0.5, 3);
+        const bodyMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
         const carBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
         carBody.position.y = 0.5;
+        carBody.castShadow = true;
         carGeometry.add(carBody);
+
+        // Teto do carro
+        const roofGeometry = new THREE.BoxGeometry(1.4, 0.4, 1.5);
+        const roofMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
+        const carRoof = new THREE.Mesh(roofGeometry, roofMaterial);
+        carRoof.position.y = 0.9;
+        carRoof.position.z = -0.5;
+        carRoof.castShadow = true;
+        carGeometry.add(carRoof);
 
         // Rodas
         const wheelGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 32);
         const wheelMaterial = new THREE.MeshPhongMaterial({color: 0x333333});
         const wheelPositions = [
-            { x: -1, y: 0, z: -1.5 },
-            { x: 1, y: 0, z: -1.5 },
-            { x: -1, y: 0, z: 1.5 },
-            { x: 1, y: 0, z: 1.5 }
+            { x: -0.8, y: 0.3, z: -1.2 },
+            { x: 0.8, y: 0.3, z: -1.2 },
+            { x: -0.8, y: 0.3, z: 1.2 },
+            { x: 0.8, y: 0.3, z: 1.2 }
         ];
         wheelPositions.forEach(pos => {
             const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
             wheel.position.set(pos.x, pos.y, pos.z);
             wheel.rotation.z = Math.PI / 2;
+            wheel.castShadow = true;
             carGeometry.add(wheel);
         });
 
         // Faróis
         const headlightGeometry = new THREE.SphereGeometry(0.1, 32, 32);
-        const headlightMaterial = new THREE.MeshPhongMaterial({color: 0xffff00, emissive: 0xffff00});
+        const headlightMaterial = new THREE.MeshPhongMaterial({color: 0xffffff, emissive: 0xffffff});
         const headlightPositions = [
-            { x: -0.8, y: 0.5, z: -2 },
-            { x: 0.8, y: 0.5, z: -2 }
+            { x: -0.6, y: 0.5, z: -1.5 },
+            { x: 0.6, y: 0.5, z: -1.5 }
         ];
         headlightPositions.forEach(pos => {
             const headlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
             headlight.position.set(pos.x, pos.y, pos.z);
             carGeometry.add(headlight);
+
+            const headlightLight = new THREE.SpotLight(0xffffff, 1, 100, Math.PI / 4, 0.5, 2);
+            headlightLight.position.set(pos.x, pos.y, pos.z - 0.5);
+            headlightLight.target.position.set(pos.x, pos.y, pos.z - 10);
+            carGeometry.add(headlightLight);
+            carGeometry.add(headlightLight.target);
         });
 
         scene.add(carGeometry);
 
-        // Criando a pista
-        const trackRadius = 100;
+        // Criando a pista com zebras (maior e mais realista)
+        const trackRadius = 150;
         const trackWidth = 15;
         const trackShape = new THREE.Shape();
-        trackShape.absarc(0, 0, trackRadius, 0, Math.PI * 2, false);
+        trackShape.absarc(0, 0, trackRadius + trackWidth / 2, 0, Math.PI * 2, false);
         const holePath = new THREE.Path();
-        holePath.absarc(0, 0, trackRadius - trackWidth, 0, Math.PI * 2, true);
+        holePath.absarc(0, 0, trackRadius - trackWidth / 2, 0, Math.PI * 2, true);
         trackShape.holes.push(holePath);
 
-        const trackGeometry = new THREE.ExtrudeGeometry(trackShape, {
+        const extrudeSettings = {
             steps: 1,
-            depth: 0.1,
+            depth: 0.2,
             bevelEnabled: false
-        });
-        const trackMaterial = new THREE.MeshPhongMaterial({color: 0x333333});
+        };
+
+        const trackGeometry = new THREE.ExtrudeGeometry(trackShape, extrudeSettings);
+        const trackTexture = new THREE.TextureLoader().load('https://i.imgur.com/3sBRQ9V.jpg');
+        trackTexture.wrapS = THREE.RepeatWrapping;
+        trackTexture.wrapT = THREE.RepeatWrapping;
+        trackTexture.repeat.set(50, 1);
+        const trackMaterial = new THREE.MeshPhongMaterial({ map: trackTexture });
         const track = new THREE.Mesh(trackGeometry, trackMaterial);
         track.rotation.x = -Math.PI / 2;
+        track.receiveShadow = true;
         scene.add(track);
 
+        // Adicionando zebras mais realistas
+        const zebraGeometry = new THREE.PlaneGeometry(1.5, trackWidth);
+        const zebraMaterial = new THREE.MeshPhongMaterial({
+            map: new THREE.TextureLoader().load('https://i.imgur.com/XxQMSFT.png'),
+            side: THREE.DoubleSide
+        });
+
+        for (let i = 0; i < 40; i++) {
+            const zebra = new THREE.Mesh(zebraGeometry, zebraMaterial);
+            const angle = (Math.PI * 2 / 40) * i;
+            zebra.position.set(
+                Math.cos(angle) * trackRadius,
+                0.21,
+                Math.sin(angle) * trackRadius
+            );
+            zebra.rotation.x = -Math.PI / 2;
+            zebra.rotation.z = angle;
+            zebra.receiveShadow = true;
+            scene.add(zebra);
+        }
+
         // Adicionando grama
-        const grassGeometry = new THREE.PlaneGeometry(500, 500);
+        const grassGeometry = new THREE.PlaneGeometry(1000, 1000);
         const grassTexture = new THREE.TextureLoader().load('https://threejsfundamentals.org/threejs/resources/images/grass.jpg');
         grassTexture.wrapS = THREE.RepeatWrapping;
         grassTexture.wrapT = THREE.RepeatWrapping;
-        grassTexture.repeat.set(100, 100);
+        grassTexture.repeat.set(200, 200);
         const grassMaterial = new THREE.MeshPhongMaterial({map: grassTexture});
         const grass = new THREE.Mesh(grassGeometry, grassMaterial);
         grass.rotation.x = -Math.PI / 2;
         grass.position.y = -0.1;
+        grass.receiveShadow = true;
         scene.add(grass);
 
         // Adicionando árvores
         const treeGeometry = new THREE.ConeGeometry(5, 20, 32);
         const treeMaterial = new THREE.MeshPhongMaterial({color: 0x008800});
-        for (let i = 0; i < 50; i++) {
-            const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+        const trunkGeometry = new THREE.CylinderGeometry(1, 1, 5, 32);
+        const trunkMaterial = new THREE.MeshPhongMaterial({color: 0x4b3621});
+
+        for (let i = 0; i < 100; i++) {
+            const treeGroup = new THREE.Group();
+            
+            const treeCone = new THREE.Mesh(treeGeometry, treeMaterial);
+            treeCone.position.y = 12.5;
+            treeCone.castShadow = true;
+            treeGroup.add(treeCone);
+            
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = 2.5;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+
             const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * 100 + 150;
-            tree.position.set(
+            const radius = Math.random() * 150 + 200;
+            treeGroup.position.set(
                 Math.cos(angle) * radius,
-                10,
+                0,
                 Math.sin(angle) * radius
             );
-            scene.add(tree);
+            scene.add(treeGroup);
         }
 
         // Adicionando luz
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(0, 100, 0);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(100, 100, 0);
         directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 10;
+        directionalLight.shadow.camera.far = 400;
+        directionalLight.shadow.camera.left = -200;
+        directionalLight.shadow.camera.right = 200;
+        directionalLight.shadow.camera.top = 200;
+        directionalLight.shadow.camera.bottom = -200;
         scene.add(directionalLight);
 
         // Configurando a câmera
-        camera.position.set(0, 10, 20);
+        camera.position.set(0, 15, 30);
         camera.lookAt(carGeometry.position);
 
         // Variáveis de controle
         let speed = 0;
-        const maxSpeed = 1;
+        const maxSpeedOnTrack = 1.0; // Equivalente a 60 km/h
+        const maxSpeedOffTrack = 0.58; // Equivalente a 35 km/h
         const acceleration = 0.01;
-        const deceleration = 0.005;
+        const deceleration = 0.02;
         let steering = 0;
         let laps = 0;
         let lastCheckpoint = 0;
+        let gear = 1;
 
         // Controladores de teclas
         const keys = {};
@@ -201,19 +432,23 @@
         function animate() {
             requestAnimationFrame(animate);
 
+            if (!gameStarted) return;
+
             // Controles do carro
-            if (keys['arrowup'] || keys['w']) {
-                speed = Math.min(speed + acceleration, maxSpeed);
-            } else if (keys['arrowdown'] || keys['s']) {
-                speed = Math.max(speed - acceleration, -maxSpeed / 2);
+            if (keys['arrowup']) {
+                speed = Math.min(speed + acceleration, maxSpeedOnTrack);
+            } else if (keys['arrowdown']) {
+                speed = Math.max(speed - acceleration, -maxSpeedOnTrack / 2);
             } else {
                 speed *= 1 - deceleration;
             }
 
-            if (keys['arrowleft'] || keys['a']) {
+            if (keys['arrowright']) {
                 steering = Math.max(steering - 0.002, -0.03);
-            } else if (keys['arrowright'] || keys['d']) {
+                speed *= 0.99; // Reduz a velocidade nas curvas
+            } else if (keys['arrowleft']) {
                 steering = Math.min(steering + 0.002, 0.03);
+                speed *= 0.99; // Reduz a velocidade nas curvas
             } else {
                 steering *= 0.95;
             }
@@ -226,7 +461,7 @@
             const carPosition = carGeometry.position;
             const distanceFromCenter = Math.sqrt(carPosition.x * carPosition.x + carPosition.z * carPosition.z);
             if (distanceFromCenter > trackRadius + trackWidth / 2 || distanceFromCenter < trackRadius - trackWidth / 2) {
-                speed *= 0.95; // Desacelera se sair da pista
+                speed = Math.min(speed, maxSpeedOffTrack); // Limita a velocidade fora da pista
             }
 
             // Verificando voltas
@@ -236,28 +471,59 @@
                 if (checkpoint === 0 && lastCheckpoint === 3) {
                     laps++;
                     document.getElementById('laps').textContent = laps;
+                    const lapTime = (Date.now() - startTime) / 1000;
+                    lapTimes.push(lapTime);
+                    startTime = Date.now();
+                    if (lapTimes.length > 1) {
+                        const bestLap = Math.min(...lapTimes);
+                        document.getElementById('best-lap').textContent = bestLap.toFixed(2);
+                    }
+                    if (laps === 3) {
+                        endGame();
+                    }
                 }
                 lastCheckpoint = checkpoint;
             }
 
             // Atualizando a posição da câmera
-            const cameraOffset = new THREE.Vector3(0, 5, 10);
+            const cameraOffset = new THREE.Vector3(0, 7, 20);
             cameraOffset.applyQuaternion(carGeometry.quaternion);
             camera.position.copy(carGeometry.position).add(cameraOffset);
             camera.lookAt(carGeometry.position);
 
             // Atualizando o velocímetro
-            const speedKmh = Math.abs(Math.round(speed * 200));
+            const speedKmh = Math.abs(Math.round(speed * 60));
             document.getElementById('speed-text').textContent = speedKmh + ' km/h';
-            document.getElementById('speed-needle').style.transform = `rotate(${speedKmh * 1.8 - 90}deg)`;
+            document.getElementById('speed-needle').style.transform = `rotate(${speedKmh * 3 - 90}deg)`;
 
             // Atualizando o minimapa
-            const minimapScale = 0.7;
+            const minimapScale = 0.4;
             const carIndicator = document.getElementById('car-indicator');
-            carIndicator.style.left = `${75 + carPosition.x * minimapScale}px`;
-            carIndicator.style.top = `${75 - carPosition.z * minimapScale}px`;
+            carIndicator.style.left = `${90 + carPosition.x * minimapScale}px`;
+            carIndicator.style.top = `${90 - carPosition.z * minimapScale}px`;
+
+            // Atualizando o tempo
+            const currentTime = (Date.now() - startTime) / 1000;
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = Math.floor(currentTime % 60);
+            document.getElementById('timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            // Atualizando a marcha
+            gear = Math.min(6, Math.max(1, Math.floor(speedKmh / 10) + 1));
+            document.getElementById('gear').textContent = gear;
 
             renderer.render(scene, camera);
+        }
+
+        function endGame() {
+            gameStarted = false;
+            totalTime = lapTimes.reduce((a, b) => a + b, 0);
+            const bestLap = Math.min(...lapTimes);
+            
+            document.getElementById('total-time').textContent = totalTime.toFixed(2) + 's';
+            document.getElementById('best-lap-final').textContent = bestLap.toFixed(2) + 's';
+            document.getElementById('game-over').style.display = 'block';
         }
 
         animate();
