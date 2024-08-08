@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galaxy Invader Deluxe</title>
+    <title>Galaxy Invaders</title>
     <style>
         body {
             margin: 0;
@@ -45,6 +45,17 @@
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 10 L90 90 L50 70 L10 90 Z" fill="%230ff"/><circle cx="50" cy="45" r="10" fill="%23fff"/><path d="M30 70 Q50 60 70 70" stroke="%23fff" stroke-width="2" fill="none"/></svg>');
             filter: drop-shadow(0 0 10px #0ff);
         }
+        #playerShield {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #ff0;
+            box-shadow: 0 0 10px #ff0;
+            display: none;
+            transform: translate(-50%, -20px);
+            pointer-events: none;
+        }
         .enemy {
             width: 50px;
             height: 50px;
@@ -62,7 +73,7 @@
             background-color: #f0f;
             box-shadow: 0 0 10px #f0f;
         }
-        #score, #level {
+        #score, #phase, #powerUpTimer, #enemiesLeft {
             position: absolute;
             top: 20px;
             font-size: 24px;
@@ -70,7 +81,9 @@
             z-index: 10;
         }
         #score { left: 20px; }
-        #level { right: 20px; }
+        #phase { right: 20px; }
+        #powerUpTimer { left: 50%; transform: translateX(-50%); }
+        #enemiesLeft { right: 20px; top: 60px; }
         #gameOver {
             position: absolute;
             top: 50%;
@@ -110,18 +123,17 @@
             transform: scale(1.1);
             box-shadow: 0 0 30px #f0f;
         }
-        #instructions {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 24px;
-            color: #0ff;
-            text-shadow: 0 0 10px #0ff;
-        }
-        #powerUp {
+        .powerUp {
             position: absolute;
             width: 30px;
             height: 30px;
+        }
+        #powerUpStar {
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,10 61,35 90,40 70,60 75,90 50,75 25,90 30,60 10,40 39,35" fill="%23ff0"/></svg>');
+            filter: drop-shadow(0 0 5px #ff0);
+        }
+        #powerUpShield {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23ff0"/></svg>');
             filter: drop-shadow(0 0 5px #ff0);
         }
     </style>
@@ -129,48 +141,69 @@
 <body>
     <div id="gameContainer">
         <div id="player"></div>
+        <div id="playerShield"></div>
         <div id="score">Score: 0</div>
-        <div id="level">Level: 1</div>
+        <div id="phase">Phase: 1</div>
+        <div id="powerUpTimer"></div>
+        <div id="enemiesLeft">Enemies Left: 5</div>
         <div id="gameOver">Game Over</div>
         <div id="startScreen">
-            <h1 style="font-size: 64px; color: #0ff; text-shadow: 0 0 20px #0ff;">Galaxy Invader Deluxe</h1>
+            <h1 style="font-size: 64px; color: #0ff; text-shadow: 0 0 20px #0ff;">Galaxy Invaders</h1>
             <button id="startButton">Iniciar Jogo</button>
-            <div id="instructions">
-                Use o mouse para mover a nave<br>
-                A nave atira automaticamente<br>
-                Desvie dos tiros inimigos e sobreviva!<br>
-                Colete power-ups para ficar mais forte!
-            </div>
         </div>
     </div>
 
     <script>
         const player = document.getElementById('player');
+        const playerShield = document.getElementById('playerShield');
         const gameContainer = document.getElementById('gameContainer');
         const scoreElement = document.getElementById('score');
-        const levelElement = document.getElementById('level');
+        const phaseElement = document.getElementById('phase');
+        const powerUpTimerElement = document.getElementById('powerUpTimer');
+        const enemiesLeftElement = document.getElementById('enemiesLeft');
         const gameOverElement = document.getElementById('gameOver');
         const startScreen = document.getElementById('startScreen');
         const startButton = document.getElementById('startButton');
 
         let score = 0;
-        let level = 1;
+        let phase = 1;
         let enemies = [];
         let bullets = [];
         let powerUps = [];
         let gameLoop;
         let enemySpeed = 1;
-        let enemyFireRate = 0.005;
+        let enemyFireRate = 0.003;
         let playerFireRate = 300;
         let lastPlayerShot = 0;
         let playerPowerUp = 1;
+        let powerUpTimer = null;
+        let powerUpTimeLeft = 0;
+        let shieldActive = false;
+        let shieldTimer = null;
+        let shieldTimeLeft = 0;
+        let enemiesLeftToNextPhase = 5;
+        let totalEnemiesInPhase = 5;
 
-        function updatePlayerPosition(e) {
+        function updatePlayerPosition(x, y) {
             const rect = gameContainer.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            player.style.left = `${Math.max(30, Math.min(rect.width - 30, x))}px`;
-            player.style.top = `${Math.max(30, Math.min(rect.height - 30, y))}px`;
+            const newLeft = Math.max(30, Math.min(rect.width - 30, x));
+            const newTop = Math.max(30, Math.min(rect.height - 30, y));
+            player.style.left = `${newLeft}px`;
+            player.style.top = `${newTop}px`;
+            playerShield.style.left = `${newLeft}px`;
+            playerShield.style.top = `${newTop + 15}px`;  // Ajustado para ficar um pouco mais acima
+        }
+
+        function handleMouseMove(e) {
+            const rect = gameContainer.getBoundingClientRect();
+            updatePlayerPosition(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const rect = gameContainer.getBoundingClientRect();
+            const touch = e.touches[0];
+            updatePlayerPosition(touch.clientX - rect.left, touch.clientY - rect.top);
         }
 
         function createEnemy() {
@@ -210,11 +243,14 @@
         function shoot() {
             const currentTime = Date.now();
             if (currentTime - lastPlayerShot > playerFireRate) {
+                const playerRect = player.getBoundingClientRect();
+                const playerCenterX = playerRect.left + playerRect.width / 2;
                 for (let i = 0; i < playerPowerUp; i++) {
                     const bullet = document.createElement('div');
                     bullet.className = 'bullet';
-                    bullet.style.left = `${parseInt(player.style.left) + 27 + (i - Math.floor(playerPowerUp/2)) * 10}px`;
-                    bullet.style.top = `${parseInt(player.style.top) - 20}px`;
+                    const offset = (i - Math.floor(playerPowerUp/2)) * 10;
+                    bullet.style.left = `${playerCenterX - 3 + offset}px`;
+                    bullet.style.top = `${playerRect.top - 20}px`;
                     gameContainer.appendChild(bullet);
                     bullets.push(bullet);
                 }
@@ -253,11 +289,10 @@
                     bullets = bullets.filter(b => b !== bullet);
                     score += 10;
                     scoreElement.textContent = `Score: ${score}`;
-                    if (score % 100 === 0) {
-                        level++;
-                        levelElement.textContent = `Level: ${level}`;
-                        enemySpeed += 0.2;
-                        enemyFireRate += 0.001;
+                    enemiesLeftToNextPhase--;
+                    enemiesLeftElement.textContent = `Enemies Left: ${enemiesLeftToNextPhase}`;
+                    if (enemiesLeftToNextPhase <= 0) {
+                        nextPhase();
                     }
                     if (Math.random() < 0.1) {
                         createPowerUp(enemy);
@@ -268,7 +303,8 @@
 
         function createPowerUp(enemy) {
             const powerUp = document.createElement('div');
-            powerUp.id = 'powerUp';
+            powerUp.className = 'powerUp';
+            powerUp.id = Math.random() < 0.5 ? 'powerUpStar' : 'powerUpShield';
             powerUp.style.left = enemy.style.left;
             powerUp.style.top = enemy.style.top;
             gameContainer.appendChild(powerUp);
@@ -282,7 +318,11 @@
                 if (isColliding(powerUp, player)) {
                     gameContainer.removeChild(powerUp);
                     powerUps = powerUps.filter(p => p !== powerUp);
-                    playerPowerUp = Math.min(playerPowerUp + 1, 5);
+                    if (powerUp.id === 'powerUpStar') {
+                        activateFirePowerUp();
+                    } else if (powerUp.id === 'powerUpShield') {
+                        activateShieldPowerUp();
+                    }
                 } else if (top > gameContainer.offsetHeight) {
                     gameContainer.removeChild(powerUp);
                     powerUps = powerUps.filter(p => p !== powerUp);
@@ -290,9 +330,46 @@
             });
         }
 
+        function activateFirePowerUp() {
+            playerPowerUp = 3;
+            powerUpTimeLeft = 10;
+            if (powerUpTimer) clearInterval(powerUpTimer);
+            powerUpTimer = setInterval(() => {
+                powerUpTimeLeft--;
+                powerUpTimerElement.textContent = `Fire Power-Up: ${powerUpTimeLeft}s`;
+                if (powerUpTimeLeft <= 0) {
+                    clearInterval(powerUpTimer);
+                    playerPowerUp = 1;
+                    powerUpTimerElement.textContent = '';
+                }
+            }, 1000);
+        }
+
+        function activateShieldPowerUp() {
+            shieldActive = true;
+            shieldTimeLeft = 10;
+            playerShield.style.display = 'block';
+            if (shieldTimer) clearInterval(shieldTimer);
+            shieldTimer = setInterval(() => {
+                shieldTimeLeft--;
+                powerUpTimerElement.textContent = `Shield: ${shieldTimeLeft}s`;
+                if (shieldTimeLeft <= 0) {
+                    clearInterval(shieldTimer);
+                    shieldActive = false;
+                    playerShield.style.display = 'none';
+                    powerUpTimerElement.textContent = '';
+                }
+            }, 1000);
+        }
+
         function checkPlayerCollision(bullet) {
             if (isColliding(bullet, player)) {
-                gameOver();
+                if (shieldActive) {
+                    gameContainer.removeChild(bullet);
+                    bullets = bullets.filter(b => b !== bullet);
+                } else {
+                    gameOver();
+                }
             }
         }
 
@@ -307,6 +384,16 @@
             );
         }
 
+        function nextPhase() {
+            phase++;
+            phaseElement.textContent = `Phase: ${phase}`;
+            totalEnemiesInPhase += 3;
+            enemiesLeftToNextPhase = totalEnemiesInPhase;
+            enemiesLeftElement.textContent = `Enemies Left: ${enemiesLeftToNextPhase}`;
+            enemySpeed += 0.2;
+            enemyFireRate += 0.001;
+        }
+
         function gameOver() {
             clearInterval(gameLoop);
             gameOverElement.style.display = 'block';
@@ -317,22 +404,31 @@
         }
 
         function startGame() {
+            enemies.forEach(enemy => gameContainer.removeChild(enemy));
+            bullets.forEach(bullet => gameContainer.removeChild(bullet));
+            powerUps.forEach(powerUp => gameContainer.removeChild(powerUp));
+
             score = 0;
-            level = 1;
+            phase = 1;
             enemies = [];
             bullets = [];
             powerUps = [];
             playerPowerUp = 1;
             enemySpeed = 1;
-            enemyFireRate = 0.005;
+            enemyFireRate = 0.003;
+            totalEnemiesInPhase = 5;
+            enemiesLeftToNextPhase = totalEnemiesInPhase;
             player.style.left = '50%';
             player.style.top = '90%';
             scoreElement.textContent = 'Score: 0';
-            levelElement.textContent = 'Level: 1';
+            phaseElement.textContent = 'Phase: 1';
+            enemiesLeftElement.textContent = `Enemies Left: ${enemiesLeftToNextPhase}`;
+            powerUpTimerElement.textContent = '';
+            playerShield.style.display = 'none';
             startScreen.style.display = 'none';
 
             gameLoop = setInterval(() => {
-                if (Math.random() < 0.02) createEnemy();
+                if (Math.random() < 0.02 && enemies.length < totalEnemiesInPhase) createEnemy();
                 moveEnemies();
                 shoot();
                 moveBullets();
@@ -340,7 +436,8 @@
             }, 16);
         }
 
-        gameContainer.addEventListener('mousemove', updatePlayerPosition);
+        gameContainer.addEventListener('mousemove', handleMouseMove);
+        gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
         startButton.addEventListener('click', startGame);
     </script>
 </body>
