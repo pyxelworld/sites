@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caça-Fantasmas</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000033;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+        }
+        #gameBoard {
+            border: 4px solid #4444FF;
+            box-shadow: 0 0 20px #4444FF;
+        }
+        #score {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #FFFF00;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #FFFF00;
+            text-shadow: 2px 2px 4px #4444FF;
+            font-size: 36px;
+        }
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 51, 0.9);
+        }
+        .screen h2 {
+            font-size: 48px;
+            color: #FFFF00;
+            text-shadow: 2px 2px 4px #4444FF;
+            margin-bottom: 30px;
+        }
+        .screen p {
+            font-size: 24px;
+            color: #FFFFFF;
+            margin-bottom: 20px;
+        }
+        .screen button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 24px;
+            padding: 15px 30px;
+            background-color: #4444FF;
+            color: #FFFFFF;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .screen button:hover {
+            background-color: #FFFF00;
+            color: #000033;
+        }
+        #gameOverScreen {
+            display: none;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <h1>Caça-Fantasmas</h1>
+    <canvas id="gameBoard" width="400" height="400"></canvas>
+    <div id="score">Pontuação: 0</div>
+
+    <div id="startScreen" class="screen">
+        <h2>Caça-Fantasmas</h2>
+        <p>Use as setas para se mover</p>
+        <p>Coma os pontos e evite os fantasmas</p>
+        <button id="startButton">Iniciar Jogo</button>
+    </div>
+
+    <div id="gameOverScreen" class="screen">
+        <h2>Fim de Jogo</h2>
+        <p id="finalScore">Pontuação: 0</p>
+        <button id="restartButton">Jogar Novamente</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameBoard');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        const tileSize = 20;
+        const playerSize = 16;
+
+        let playerX = 1;
+        let playerY = 1;
+        let score = 0;
+        let dots = [];
+        let walls = [];
+        let ghosts = [];
+        let powerUp = null;
+        let isPoweredUp = false;
+        let ghostMoveCounter = 0;
+        let gameRunning = false;
+
+        // Inicializar paredes
+        for (let i = 0; i < 20; i++) {
+            walls.push({x: i, y: 0});
+            walls.push({x: i, y: 19});
+            walls.push({x: 0, y: i});
+            walls.push({x: 19, y: i});
+        }
+        // Adicionar mais obstáculos
+        walls.push(
+            {x: 5, y: 5}, {x: 5, y: 6}, {x: 6, y: 5},
+            {x: 14, y: 14}, {x: 14, y: 15}, {x: 15, y: 14},
+            {x: 3, y: 3}, {x: 4, y: 3}, {x: 3, y: 4},
+            {x: 16, y: 3}, {x: 15, y: 3}, {x: 16, y: 4},
+            {x: 3, y: 16}, {x: 4, y: 16}, {x: 3, y: 15},
+            {x: 16, y: 16}, {x: 15, y: 16}, {x: 16, y: 15},
+            {x: 9, y: 9}, {x: 10, y: 9}, {x: 9, y: 10}, {x: 10, y: 10},
+            {x: 7, y: 12}, {x: 8, y: 12}, {x: 11, y: 12}, {x: 12, y: 12},
+            {x: 7, y: 7}, {x: 12, y: 7}
+        );
+
+        function initGame() {
+            playerX = 1;
+            playerY = 1;
+            score = 0;
+            dots = [];
+            ghosts = [];
+            powerUp = null;
+            isPoweredUp = false;
+            ghostMoveCounter = 0;
+
+            // Inicializar pontos
+            for (let i = 1; i < 19; i++) {
+                for (let j = 1; j < 19; j++) {
+                    if (!walls.some(wall => wall.x === i && wall.y === j)) {
+                        dots.push({x: i, y: j});
+                    }
+                }
+            }
+
+            // Inicializar fantasmas
+            ghosts.push({x: 18, y: 1, color: 'red'});
+            ghosts.push({x: 1, y: 18, color: 'pink'});
+
+            scoreElement.textContent = `Pontuação: ${score}`;
+        }
+
+        function drawPlayer() {
+            ctx.beginPath();
+            ctx.arc(playerX * tileSize + tileSize / 2, playerY * tileSize + tileSize / 2, playerSize / 2, 0.2 * Math.PI, 1.8 * Math.PI);
+            ctx.lineTo(playerX * tileSize + tileSize / 2, playerY * tileSize + tileSize / 2);
+            ctx.fillStyle = "#FFFF00";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawDots() {
+            dots.forEach(dot => {
+                ctx.beginPath();
+                ctx.arc(dot.x * tileSize + tileSize / 2, dot.y * tileSize + tileSize / 2, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        function drawWalls() {
+            walls.forEach(wall => {
+                ctx.fillStyle = "#4444FF";
+                ctx.fillRect(wall.x * tileSize, wall.y * tileSize, tileSize, tileSize);
+            });
+        }
+
+        function drawGhosts() {
+            ghosts.forEach(ghost => {
+                ctx.beginPath();
+                ctx.arc(ghost.x * tileSize + tileSize / 2, ghost.y * tileSize + tileSize / 2, playerSize / 2, 0, 2 * Math.PI);
+                ctx.fillStyle = isPoweredUp ? '#0000FF' : ghost.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        function drawPowerUp() {
+            if (powerUp) {
+                ctx.beginPath();
+                ctx.arc(powerUp.x * tileSize + tileSize / 2, powerUp.y * tileSize + tileSize / 2, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = "#00FF00";
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function clear() {
+            ctx.fillStyle = "#000033";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function moveGhosts() {
+            ghostMoveCounter++;
+            if (ghostMoveCounter >= 5) {
+                ghostMoveCounter = 0;
+                ghosts.forEach(ghost => {
+                    const directions = [
+                        {dx: -1, dy: 0},
+                        {dx: 1, dy: 0},
+                        {dx: 0, dy: -1},
+                        {dx: 0, dy: 1}
+                    ];
+                    
+                    const validDirections = directions.filter(dir => {
+                        const newX = ghost.x + dir.dx;
+                        const newY = ghost.y + dir.dy;
+                        return !walls.some(wall => wall.x === newX && wall.y === newY);
+                    });
+
+                    if (validDirections.length > 0) {
+                        const randomDirection = validDirections[Math.floor(Math.random() * validDirections.length)];
+                        ghost.x += randomDirection.dx;
+                        ghost.y += randomDirection.dy;
+                    }
+                });
+            }
+        }
+
+        function checkCollisions() {
+            // Colisão com pontos
+            const dotIndex = dots.findIndex(dot => dot.x === playerX && dot.y === playerY);
+            if (dotIndex !== -1) {
+                dots.splice(dotIndex, 1);
+                score += 10;
+                scoreElement.textContent = `Pontuação: ${score}`;
+            }
+
+            // Colisão com power-up
+            if (powerUp && powerUp.x === playerX && powerUp.y === playerY) {
+                isPoweredUp = true;
+                powerUp = null;
+                setTimeout(() => {
+                    isPoweredUp = false;
+                }, 5000);
+            }
+
+            // Colisão com fantasmas
+            ghosts.forEach(ghost => {
+                if (ghost.x === playerX && ghost.y === playerY) {
+                    if (isPoweredUp) {
+                        score += 200;
+                        ghost.x = 1;
+                        ghost.y = 1;
+                    } else {
+                        gameOver();
+                    }
+                }
+            });
+
+            // Verificar se todos os pontos foram coletados
+            if (dots.length === 0) {
+                gameWon();
+            }
+        }
+
+        function spawnPowerUp() {
+            if (!powerUp && Math.random() < 0.01) {
+                const emptySpaces = dots.filter(dot => 
+                    !walls.some(wall => wall.x === dot.x && wall.y === dot.y) &&
+                    !ghosts.some(ghost => ghost.x === dot.x && ghost.y === dot.y)
+                );
+                if (emptySpaces.length > 0) {
+                    const randomSpace = emptySpaces[Math.floor(Math.random() * emptySpaces.length)];
+                    powerUp = {x: randomSpace.x, y: randomSpace.y};
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            clear();
+            drawWalls();
+            drawDots();
+            drawPowerUp();
+            drawPlayer();
+            drawGhosts();
+            moveGhosts();
+            checkCollisions();
+            spawnPowerUp();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            initGame();
+            gameRunning = true;
+            startScreen.style.display = 'none';
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            finalScoreElement.textContent = `Pontuação: ${score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function gameWon() {
+            gameRunning = false;
+            finalScoreElement.textContent = `Parabéns! Você venceu! Pontuação: ${score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+
+            const newX = playerX + (e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0);
+            const newY = playerY + (e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0);
+
+            if (!walls.some(wall => wall.x === newX && wall.y === newY)) {
+                playerX = newX;
+                playerY = newY;
+            }
+        });
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', () => {
+            gameOverScreen.style.display = 'none';
+            startGame();
+        });
+
+        // Inicializar o jogo, mas não começar até que o botão seja pressionado
+        initGame();
+    </script>
+</body>
+</html>

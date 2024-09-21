@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Xadrez com IA Melhorada</title>
+    <style>
+        #chessboard {
+            width: 400px;
+            height: 400px;
+            border: 2px solid #333;
+            margin-bottom: 10px;
+        }
+        .square {
+            width: 50px;
+            height: 50px;
+            float: left;
+            text-align: center;
+            font-size: 40px;
+            line-height: 50px;
+            cursor: pointer;
+        }
+        .white {
+            background-color: #f0d9b5;
+        }
+        .black {
+            background-color: #b58863;
+        }
+        .selected {
+            background-color: #7fff00;
+        }
+        .valid-move {
+            background-color: #7fbf7f;
+        }
+        #message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        #controls {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chessboard"></div>
+    <div id="controls">
+        <button id="toggleMode">Alternar Modo: Dois Jogadores</button>
+        <select id="difficulty" style="display: none;">
+            <option value="easy">Fácil</option>
+            <option value="medium">Médio</option>
+            <option value="hard">Difícil</option>
+        </select>
+    </div>
+    <div id="message"></div>
+
+    <script>
+        const board = document.getElementById('chessboard');
+        const toggleButton = document.getElementById('toggleMode');
+        const difficultySelect = document.getElementById('difficulty');
+        const messageDiv = document.getElementById('message');
+        let selectedPiece = null;
+        let isComputerMode = false;
+        let currentPlayer = 'white';
+        let chessBoard = [];
+        let aiDifficulty = 'easy';
+
+        const initialBoard = [
+            ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+            ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+            ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
+        ];
+
+        const pieceValues = {
+            '♙': 1, '♟': 1,  // Peão
+            '♖': 5, '♜': 5,  // Torre
+            '♘': 3, '♞': 3,  // Cavalo
+            '♗': 3, '♝': 3,  // Bispo
+            '♕': 9, '♛': 9,  // Rainha
+            '♔': 100, '♚': 100  // Rei (valor alto para priorizar proteção)
+        };
+
+        function createBoard() {
+            board.innerHTML = '';
+            chessBoard = JSON.parse(JSON.stringify(initialBoard));
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(i + j) % 2 === 0 ? 'white' : 'black'}`;
+                    square.dataset.row = i;
+                    square.dataset.col = j;
+                    square.textContent = chessBoard[i][j];
+                    square.addEventListener('click', handleClick);
+                    board.appendChild(square);
+                }
+            }
+        }
+
+        function handleClick(event) {
+            if (isComputerMode && currentPlayer === 'black') return;
+
+            const square = event.target;
+            const row = parseInt(square.dataset.row);
+            const col = parseInt(square.dataset.col);
+
+            if (selectedPiece) {
+                if (square !== selectedPiece) {
+                    const fromRow = parseInt(selectedPiece.dataset.row);
+                    const fromCol = parseInt(selectedPiece.dataset.col);
+                    if (isValidMove(fromRow, fromCol, row, col)) {
+                        movePiece(selectedPiece, square);
+                        switchPlayer();
+                        if (isComputerMode && currentPlayer === 'black') {
+                            setTimeout(computerMove, 500);
+                        }
+                    }
+                }
+                clearHighlights();
+                selectedPiece = null;
+            } else if (square.textContent && isPieceOfCurrentPlayer(square.textContent)) {
+                selectedPiece = square;
+                highlightValidMoves(row, col);
+            }
+        }
+
+        function movePiece(from, to) {
+            const fromRow = parseInt(from.dataset.row);
+            const fromCol = parseInt(from.dataset.col);
+            const toRow = parseInt(to.dataset.row);
+            const toCol = parseInt(to.dataset.col);
+
+            chessBoard[toRow][toCol] = chessBoard[fromRow][fromCol];
+            chessBoard[fromRow][fromCol] = '';
+
+            to.textContent = from.textContent;
+            from.textContent = '';
+        }
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+            messageDiv.textContent = `Turno do jogador: ${currentPlayer === 'white' ? 'Branco' : 'Preto'}`;
+        }
+
+        function isPieceOfCurrentPlayer(piece) {
+            return currentPlayer === 'white' ? piece.charCodeAt(0) >= 9812 && piece.charCodeAt(0) <= 9817 : piece.charCodeAt(0) >= 9818 && piece.charCodeAt(0) <= 9823;
+        }
+
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            const piece = chessBoard[fromRow][fromCol];
+            const targetPiece = chessBoard[toRow][toCol];
+
+            if (targetPiece !== '' && isPieceOfCurrentPlayer(targetPiece)) {
+                return false;
+            }
+
+            const pieceType = getPieceType(piece);
+
+            switch (pieceType) {
+                case 'pawn':
+                    return isValidPawnMove(fromRow, fromCol, toRow, toCol);
+                case 'rook':
+                    return isValidRookMove(fromRow, fromCol, toRow, toCol);
+                case 'knight':
+                    return isValidKnightMove(fromRow, fromCol, toRow, toCol);
+                case 'bishop':
+                    return isValidBishopMove(fromRow, fromCol, toRow, toCol);
+                case 'queen':
+                    return isValidQueenMove(fromRow, fromCol, toRow, toCol);
+                case 'king':
+                    return isValidKingMove(fromRow, fromCol, toRow, toCol);
+                default:
+                    return false;
+            }
+        }
+
+        function getPieceType(piece) {
+            const pieceMap = {
+                '♙': 'pawn', '♟': 'pawn',
+                '♖': 'rook', '♜': 'rook',
+                '♘': 'knight', '♞': 'knight',
+                '♗': 'bishop', '♝': 'bishop',
+                '♕': 'queen', '♛': 'queen',
+                '♔': 'king', '♚': 'king'
+            };
+            return pieceMap[piece];
+        }
+
+        function isValidPawnMove(fromRow, fromCol, toRow, toCol) {
+            const direction = currentPlayer === 'white' ? -1 : 1;
+            const startRow = currentPlayer === 'white' ? 6 : 1;
+
+            if (fromCol === toCol && chessBoard[toRow][toCol] === '') {
+                if (fromRow + direction === toRow) {
+                    return true;
+                }
+                if (fromRow === startRow && fromRow + 2 * direction === toRow && chessBoard[fromRow + direction][fromCol] === '') {
+                    return true;
+                }
+            }
+
+            if (Math.abs(fromCol - toCol) === 1 && fromRow + direction === toRow) {
+                if (chessBoard[toRow][toCol] !== '' && !isPieceOfCurrentPlayer(chessBoard[toRow][toCol])) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function isValidRookMove(fromRow, fromCol, toRow, toCol) {
+            if (fromRow !== toRow && fromCol !== toCol) return false;
+
+            const rowStep = fromRow === toRow ? 0 : (toRow - fromRow) / Math.abs(toRow - fromRow);
+            const colStep = fromCol === toCol ? 0 : (toCol - fromCol) / Math.abs(toCol - fromCol);
+
+            for (let i = 1; i < Math.max(Math.abs(toRow - fromRow), Math.abs(toCol - fromCol)); i++) {
+                if (chessBoard[fromRow + i * rowStep][fromCol + i * colStep] !== '') {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function isValidKnightMove(fromRow, fromCol, toRow, toCol) {
+            const rowDiff = Math.abs(toRow - fromRow);
+            const colDiff = Math.abs(toCol - fromCol);
+
+            return (rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2);
+        }
+
+        function isValidBishopMove(fromRow, fromCol, toRow, toCol) {
+            if (Math.abs(toRow - fromRow) !== Math.abs(toCol - fromCol)) return false;
+
+            const rowStep = (toRow - fromRow) / Math.abs(toRow - fromRow);
+            const colStep = (toCol - fromCol) / Math.abs(toCol - fromCol);
+
+            for (let i = 1; i < Math.abs(toRow - fromRow); i++) {
+                if (chessBoard[fromRow + i * rowStep][fromCol + i * colStep] !== '') {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function isValidQueenMove(fromRow, fromCol, toRow, toCol) {
+            return isValidRookMove(fromRow, fromCol, toRow, toCol) || isValidBishopMove(fromRow, fromCol, toRow, toCol);
+        }
+
+        function isValidKingMove(fromRow, fromCol, toRow, toCol) {
+            const rowDiff = Math.abs(toRow - fromRow);
+            const colDiff = Math.abs(toCol - fromCol);
+
+            return rowDiff <= 1 && colDiff <= 1;
+        }
+
+        function highlightValidMoves(row, col) {
+            clearHighlights();
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (isValidMove(row, col, i, j)) {
+                        const square = board.children[i * 8 + j];
+                        square.classList.add('valid-move');
+                    }
+                }
+            }
+        }
+
+        function clearHighlights() {
+            const squares = board.getElementsByClassName('square');
+            for (let square of squares) {
+                square.classList.remove('valid-move');
+                square.classList.remove('selected');
+            }
+        }
+
+        function computerMove() {
+            let bestMove = null;
+            let bestScore = -Infinity;
+
+            for (let fromRow = 0; fromRow < 8; fromRow++) {
+                for (let fromCol = 0; fromCol < 8; fromCol++) {
+                    if (chessBoard[fromRow][fromCol] !== '' && !isPieceOfCurrentPlayer(chessBoard[fromRow][fromCol])) {
+                        for (let toRow = 0; toRow < 8; toRow++) {
+                            for (let toCol = 0; toCol < 8; toCol++) {
+                                if (isValidMove(fromRow, fromCol, toRow, toCol)) {
+                                    const move = {from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}};
+                                    const score = evaluateMove(move);
+                                    if (score > bestScore) {
+                                        bestScore = score;
+                                        bestMove = move;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (bestMove) {
+                const fromSquare = board.children[bestMove.from.row * 8 + bestMove.from.col];
+                const toSquare = board.children[bestMove.to.row * 8 + bestMove.to.col];
+                movePiece(fromSquare, toSquare);
+                switchPlayer();
+            }
+        }
+
+        function evaluateMove(move) {
+            const piece = chessBoard[move.from.row][move.from.col];
+            const targetPiece = chessBoard[move.to.row][move.to.col];
+            let score = 0;
+
+            // Captura
+            if (targetPiece !== '') {
+                score += pieceValues[targetPiece] * 10;
+            }
+
+            // Avanço de peões
+            if (getPieceType(piece) === 'pawn') {
+                score += (7 - move.to.row);  // Incentiva o avanço de peões
+            }
+
+            // Controle do centro
+            if ((move.to.row === 3 || move.to.row === 4) && (move.to.col === 3 || move.to.col === 4)) {
+                score += 5;
+            }
+
+            // Mobilidade
+            score += getValidMoves(move.to.row, move.to.col).length;
+
+            // Fator aleatório para variar o jogo
+            score += Math.random() * 2;
+
+            return score;
+        }
+
+        function getValidMoves(row, col) {
+            const validMoves = [];
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (isValidMove(row, col, i, j)) {
+                        validMoves.push({row: i, col: j});
+                    }
+                }
+            }
+            return validMoves;
+        }
+
+        toggleButton.addEventListener('click', () => {
+            isComputerMode = !isComputerMode;
+            toggleButton.textContent = `Alternar Modo: ${isComputerMode ? 'Contra Computador' : 'Dois Jogadores'}`;
+            difficultySelect.style.display = isComputerMode ? 'inline-block' : 'none';
+            createBoard();
+            currentPlayer = 'white';
+            messageDiv.textContent = 'Turno do jogador: Branco';
+            if (isComputerMode) {
+                messageDiv.textContent += ' (Você é o Branco, Computador é o Preto)';
+            }
+        });
+
+        difficultySelect.addEventListener('change', (event) => {
+            aiDifficulty = event.target.value;
+        });
+
+        createBoard();
+        messageDiv.textContent = 'Turno do jogador: Branco';
+    </script>
+</body>
+</html>
