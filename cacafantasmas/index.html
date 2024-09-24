@@ -83,6 +83,8 @@
         <h2>Caça-Fantasmas</h2>
         <p>Use as setas para se mover</p>
         <p>Coma os pontos e evite os fantasmas</p>
+        <p>Power-ups permitem comer fantasmas!</p>
+        <p>Colete todos os pontos para vencer!</p>
         <button id="startButton">Iniciar Jogo</button>
     </div>
 
@@ -104,6 +106,7 @@
 
         const tileSize = 20;
         const playerSize = 16;
+        const gridSize = 20;
 
         let playerX = 1;
         let playerY = 1;
@@ -116,25 +119,33 @@
         let ghostMoveCounter = 0;
         let gameRunning = false;
 
-        // Inicializar paredes
-        for (let i = 0; i < 20; i++) {
-            walls.push({x: i, y: 0});
-            walls.push({x: i, y: 19});
-            walls.push({x: 0, y: i});
-            walls.push({x: 19, y: i});
+        function generateRandomObstacles() {
+            walls = [];
+            
+            // Paredes externas
+            for (let i = 0; i < gridSize; i++) {
+                walls.push({x: i, y: 0});
+                walls.push({x: i, y: gridSize - 1});
+                walls.push({x: 0, y: i});
+                walls.push({x: gridSize - 1, y: i});
+            }
+
+            // Obstáculos aleatórios
+            const numObstacles = Math.floor(Math.random() * 20) + 10; // Entre 10 e 30 obstáculos
+            for (let i = 0; i < numObstacles; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * (gridSize - 2)) + 1;
+                    y = Math.floor(Math.random() * (gridSize - 2)) + 1;
+                } while (
+                    walls.some(wall => wall.x === x && wall.y === y) ||
+                    (x === 1 && y === 1) || // Posição inicial do jogador
+                    (x === gridSize - 2 && y === 1) || // Posição do fantasma 1
+                    (x === 1 && y === gridSize - 2) // Posição do fantasma 2
+                );
+                walls.push({x, y});
+            }
         }
-        // Adicionar mais obstáculos
-        walls.push(
-            {x: 5, y: 5}, {x: 5, y: 6}, {x: 6, y: 5},
-            {x: 14, y: 14}, {x: 14, y: 15}, {x: 15, y: 14},
-            {x: 3, y: 3}, {x: 4, y: 3}, {x: 3, y: 4},
-            {x: 16, y: 3}, {x: 15, y: 3}, {x: 16, y: 4},
-            {x: 3, y: 16}, {x: 4, y: 16}, {x: 3, y: 15},
-            {x: 16, y: 16}, {x: 15, y: 16}, {x: 16, y: 15},
-            {x: 9, y: 9}, {x: 10, y: 9}, {x: 9, y: 10}, {x: 10, y: 10},
-            {x: 7, y: 12}, {x: 8, y: 12}, {x: 11, y: 12}, {x: 12, y: 12},
-            {x: 7, y: 7}, {x: 12, y: 7}
-        );
 
         function initGame() {
             playerX = 1;
@@ -146,9 +157,11 @@
             isPoweredUp = false;
             ghostMoveCounter = 0;
 
+            generateRandomObstacles();
+
             // Inicializar pontos
-            for (let i = 1; i < 19; i++) {
-                for (let j = 1; j < 19; j++) {
+            for (let i = 1; i < gridSize - 1; i++) {
+                for (let j = 1; j < gridSize - 1; j++) {
                     if (!walls.some(wall => wall.x === i && wall.y === j)) {
                         dots.push({x: i, y: j});
                     }
@@ -156,10 +169,10 @@
             }
 
             // Inicializar fantasmas
-            ghosts.push({x: 18, y: 1, color: 'red'});
-            ghosts.push({x: 1, y: 18, color: 'pink'});
+            ghosts.push({x: gridSize - 2, y: 1, color: 'red'});
+            ghosts.push({x: 1, y: gridSize - 2, color: 'pink'});
 
-            scoreElement.textContent = `Pontuação: ${score}`;
+            updateScore();
         }
 
         function drawPlayer() {
@@ -245,8 +258,10 @@
             const dotIndex = dots.findIndex(dot => dot.x === playerX && dot.y === playerY);
             if (dotIndex !== -1) {
                 dots.splice(dotIndex, 1);
-                score += 10;
-                scoreElement.textContent = `Pontuação: ${score}`;
+                addScore(10);
+                if (dots.length === 0) {
+                    gameWon();
+                }
             }
 
             // Colisão com power-up
@@ -259,21 +274,24 @@
             }
 
             // Colisão com fantasmas
-            ghosts.forEach(ghost => {
+            ghosts.forEach((ghost, index) => {
                 if (ghost.x === playerX && ghost.y === playerY) {
                     if (isPoweredUp) {
-                        score += 200;
-                        ghost.x = 1;
-                        ghost.y = 1;
+                        addScore(200);
+                        resetGhost(ghost);
                     } else {
                         gameOver();
                     }
                 }
             });
+        }
 
-            // Verificar se todos os pontos foram coletados
-            if (dots.length === 0) {
-                gameWon();
+        function resetGhost(ghost) {
+            ghost.x = Math.floor(Math.random() * (gridSize - 2)) + 1;
+            ghost.y = Math.floor(Math.random() * (gridSize - 2)) + 1;
+            while (walls.some(wall => wall.x === ghost.x && wall.y === ghost.y)) {
+                ghost.x = Math.floor(Math.random() * (gridSize - 2)) + 1;
+                ghost.y = Math.floor(Math.random() * (gridSize - 2)) + 1;
             }
         }
 
@@ -316,12 +334,23 @@
             gameRunning = false;
             finalScoreElement.textContent = `Pontuação: ${score}`;
             gameOverScreen.style.display = 'flex';
+            gameOverScreen.querySelector('h2').textContent = 'Fim de Jogo';
         }
 
         function gameWon() {
             gameRunning = false;
             finalScoreElement.textContent = `Parabéns! Você venceu! Pontuação: ${score}`;
             gameOverScreen.style.display = 'flex';
+            gameOverScreen.querySelector('h2').textContent = 'Você Venceu!';
+        }
+
+        function addScore(points) {
+            score += points;
+            updateScore();
+        }
+
+        function updateScore() {
+            scoreElement.textContent = `Pontuação: ${score}`;
         }
 
         document.addEventListener('keydown', (e) => {
@@ -346,4 +375,4 @@
         initGame();
     </script>
 </body>
-</html>
+</html>1
