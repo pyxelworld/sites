@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eat-It</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1a1a2e;
+            font-family: Arial, sans-serif;
+            color: #ffffff;
+        }
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+        #gameCanvas {
+            border: 2px solid #16213e;
+            border-radius: 10px;
+            touch-action: none;
+            background-color: #0f3460;
+        }
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(26, 26, 46, 0.9);
+            z-index: 10;
+        }
+        #menu h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #e94560;
+        }
+        #startButton {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #e94560;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #startButton:hover {
+            background-color: #ff6b6b;
+        }
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="menu">
+            <h1>Eat-It</h1>
+            <button id="startButton">Iniciar Jogo</button>
+        </div>
+        <div id="hud">
+            <div>Pontuação: <span id="scoreDisplay">0</span></div>
+            <div>Tamanho: <span id="sizeDisplay">20</span></div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const menu = document.getElementById('menu');
+        const startButton = document.getElementById('startButton');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const sizeDisplay = document.getElementById('sizeDisplay');
+
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 20,
+            speed: 5,
+            targetX: canvas.width / 2,
+            targetY: canvas.height / 2
+        };
+
+        const objects = [];
+        let score = 0;
+        let isMouseDown = false;
+        let gameRunning = false;
+
+        function createObject() {
+            const object = {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 10 + 5,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`
+            };
+            objects.push(object);
+        }
+
+        function drawPlayer() {
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            const gradient = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, player.radius);
+            gradient.addColorStop(0, '#e94560');
+            gradient.addColorStop(1, '#16213e');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawObjects() {
+            objects.forEach(object => {
+                ctx.beginPath();
+                ctx.arc(object.x, object.y, object.radius, 0, Math.PI * 2);
+                ctx.fillStyle = object.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        function update() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const dx = player.targetX - player.x;
+            const dy = player.targetY - player.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 1) {
+                player.x += (dx / distance) * player.speed;
+                player.y += (dy / distance) * player.speed;
+            }
+
+            drawPlayer();
+            drawObjects();
+
+            objects.forEach((object, index) => {
+                const dx = player.x - object.x;
+                const dy = player.y - object.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < player.radius + object.radius) {
+                    objects.splice(index, 1);
+                    player.radius += 0.5;
+                    score += 10;
+                    updateHUD();
+                }
+            });
+
+            requestAnimationFrame(update);
+        }
+
+        function updateHUD() {
+            scoreDisplay.textContent = score;
+            sizeDisplay.textContent = player.radius.toFixed(1);
+        }
+
+        function handleStart(event) {
+            isMouseDown = true;
+            updateTargetPosition(event);
+        }
+
+        function handleMove(event) {
+            if (isMouseDown) {
+                updateTargetPosition(event);
+            }
+        }
+
+        function handleEnd() {
+            isMouseDown = false;
+        }
+
+        function updateTargetPosition(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX || event.touches[0].clientX;
+            const y = event.clientY || event.touches[0].clientY;
+            player.targetX = x - rect.left;
+            player.targetY = y - rect.top;
+        }
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseout', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart);
+        canvas.addEventListener('touchmove', handleMove);
+        canvas.addEventListener('touchend', handleEnd);
+
+        startButton.addEventListener('click', () => {
+            menu.style.display = 'none';
+            gameRunning = true;
+            update();
+            setInterval(createObject, 1000);
+        });
+
+        updateHUD();
+    </script>
+</body>
+</html>
